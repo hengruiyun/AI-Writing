@@ -29,13 +29,29 @@ def error_response(message="操作失败", code=400):
         'message': message
     }), code
 
-def get_user_ai_settings(data: dict) -> dict:
-    """从请求数据中提取用户AI设置"""
+def get_user_ai_settings(user_id: int) -> dict:
+    """从用户配置中读取AI设置"""
+    from json_storage import UserStorage
+    
+    user = UserStorage.get_user_by_id(user_id)
+    if not user:
+        return {
+            'provider': 'Ollama',  # 默认使用Ollama
+            'model': 'gemma3:latest',
+            'api_key': '',
+            'base_url': 'localhost:11434'
+        }
+    
+    # 如果用户没有设置AI配置，使用默认值
+    provider = user.get('ai_provider', 'Ollama')
+    model = user.get('ai_model', 'gemma2:latest')
+    base_url = user.get('ai_base_url', 'localhost:11434')
+    
     return {
-        'provider': data.get('ai_provider', ''),
-        'model': data.get('ai_model', ''),
-        'api_key': data.get('ai_api_key', ''),
-        'base_url': data.get('ai_base_url', '')
+        'provider': provider,
+        'model': model,
+        'api_key': user.get('ai_api_key', ''),
+        'base_url': base_url
     }
 
 def build_ai_context(user, project=None, extra_context=None) -> dict:
@@ -113,13 +129,23 @@ def update_user_settings():
         data = request.get_json()
         grade = data.get('grade')
         subject = data.get('subject')
+        ai_provider = data.get('ai_provider', '')
+        ai_model = data.get('ai_model', '')
+        ai_api_key = data.get('ai_api_key', '')
+        ai_base_url = data.get('ai_base_url', '')
         
         if not grade or not subject:
             return error_response("年级和学科不能为空")
         
         @with_user_dao
         def _update_user(dao):
-            user = dao.update_user(user_id, grade=grade, subject=subject)
+            user = dao.update_user(user_id, 
+                                 grade=grade, 
+                                 subject=subject,
+                                 ai_provider=ai_provider,
+                                 ai_model=ai_model,
+                                 ai_api_key=ai_api_key,
+                                 ai_base_url=ai_base_url)
             return user  # JSON DAO直接返回字典
         
         user_data = _update_user()
@@ -131,6 +157,68 @@ def update_user_settings():
         
     except Exception as e:
         return error_response(f"更新设置失败: {str(e)}", 500)
+
+@api_bp.route('/users/ai-settings', methods=['PUT'])
+def update_user_ai_settings():
+    """更新用户AI设置"""
+    # 自动设置为已登录状态
+    if 'user_id' not in session:
+        session['user_id'] = 1
+        session['username'] = '267278466@qq.com'
+    
+    user_id = session.get('user_id')
+    
+    try:
+        data = request.get_json()
+        ai_provider = data.get('ai_provider', '')
+        ai_model = data.get('ai_model', '')
+        ai_api_key = data.get('ai_api_key', '')
+        ai_base_url = data.get('ai_base_url', '')
+        
+        @with_user_dao
+        def _update_user_ai(dao):
+            user = dao.get_user_by_id(user_id)
+            if not user:
+                return None
+            
+            # 保存更新 - 直接传递字段而不是整个user对象
+            updated_user = dao.update_user(user_id, 
+                ai_provider=ai_provider,
+                ai_model=ai_model,
+                ai_api_key=ai_api_key,
+                ai_base_url=ai_base_url
+            )
+            return updated_user
+        
+        updated_user = _update_user_ai()
+        if not updated_user:
+            return error_response("用户不存在", 404)
+        
+        return success_response({
+            'ai_provider': updated_user.get('ai_provider', ''),
+            'ai_model': updated_user.get('ai_model', ''),
+            'ai_base_url': updated_user.get('ai_base_url', '')
+        }, "AI设置更新成功")
+        
+    except Exception as e:
+        return error_response(f"更新AI设置失败: {str(e)}", 500)
+
+@api_bp.route('/users/ai-settings', methods=['GET'])
+def get_user_ai_settings_api():
+    """获取用户AI设置"""
+    # 自动设置为已登录状态
+    if 'user_id' not in session:
+        session['user_id'] = 1
+        session['username'] = '267278466@qq.com'
+    
+    user_id = session.get('user_id')
+    
+    try:
+        ai_settings = get_user_ai_settings(user_id)
+        return success_response(ai_settings)
+        
+    except Exception as e:
+        return error_response(f"获取AI设置失败: {str(e)}", 500)
 
 # 项目管理API
 @api_bp.route('/projects', methods=['POST'])
@@ -178,21 +266,31 @@ def create_project():
         
         # 生成或使用自定义题目
         if topic_mode == 'ai_generated':
-            try:
-                # 获取用户AI设置
-                user_ai_settings = get_user_ai_settings(data)
-                print(f"AI设置: {user_ai_settings}")
-                
-                topic = sync_generate_topic(
-                    grade=user.get('grade'),
-                    subject=subject,
-                    article_type=article_type,
-                    user_settings=user_ai_settings
-                )
-                print(f"生成的题目: {topic}")
-            except Exception as e:
-                print(f"AI生成题目失败: {str(e)}")
-                return error_response(f"AI生成题目失败: {str(e)}")
+            # 如果前端已经生成了题目并通过custom_topic传递，直接使用
+            if custom_topic and custom_topic.strip():
+                topic = custom_topic
+                print(f"使用前端已生成的AI题目: {topic}")
+            else:
+                # 前端没有生成题目，后端生成
+                try:
+                    # 获取用户AI设置
+                    user_ai_settings = get_user_ai_settings(user_id)
+                    print(f"AI设置: {user_ai_settings}")
+                    
+                    # 检查AI设置是否完整
+                    if not user_ai_settings.get('provider') or not user_ai_settings.get('model'):
+                        return error_response("AI生成题目需要先配置AI设置（供应商和模型）。请在首页配置AI设置后再试，或选择自定义题目模式。")
+                    
+                    topic = sync_generate_topic(
+                        grade=user.get('grade'),
+                        subject=subject,
+                        article_type=article_type,
+                        user_settings=user_ai_settings
+                    )
+                    print(f"后端生成的题目: {topic}")
+                except Exception as e:
+                    print(f"AI生成题目失败: {str(e)}")
+                    return error_response(f"AI生成题目失败: {str(e)}")
         else:
             topic = custom_topic
             if not topic or not topic.strip():
@@ -364,6 +462,11 @@ def delete_project(project_id):
 def generate_topic():
     """生成写作题目"""
     try:
+        # 检查用户登录状态
+        user_id = session.get('user_id')
+        if not user_id:
+            return error_response("请先登录", 401)
+        
         data = request.get_json()
         grade = data.get('grade')
         subject = data.get('subject')
@@ -374,7 +477,7 @@ def generate_topic():
             return error_response("年级、学科和文章类型不能为空")
         
         # 获取用户AI设置
-        user_ai_settings = get_user_ai_settings(data)
+        user_ai_settings = get_user_ai_settings(user_id)
         
         # 生成题目
         topic = sync_generate_topic(
@@ -452,7 +555,7 @@ def analyze_content():
             }
         
         # 获取用户AI设置
-        user_ai_settings = get_user_ai_settings(data)
+        user_ai_settings = get_user_ai_settings(user_id)
         
         # 分析内容
         analysis = sync_analyze_content(
@@ -545,7 +648,7 @@ def evaluate_article():
             }
         
         # 获取用户AI设置
-        user_ai_settings = get_user_ai_settings(data)
+        user_ai_settings = get_user_ai_settings(user_id)
         
         # 评估文章
         evaluation = sync_evaluate_article(
@@ -650,7 +753,7 @@ def generate_suggestions():
             }
         
         # 获取用户AI设置
-        user_ai_settings = get_user_ai_settings(data)
+        user_ai_settings = get_user_ai_settings(user_id)
         
         # 生成阶段特定的建议
         suggestions = sync_generate_stage_suggestions(
@@ -799,7 +902,7 @@ def score_article():
             project_data = _get_project_data()
         
         # 获取用户AI设置
-        user_ai_settings = get_user_ai_settings(data)
+        user_ai_settings = get_user_ai_settings(user_id)
         
         # 创建AI服务实例
         ai_service = AIService()

@@ -23,6 +23,10 @@ class User:
     password_hash: str
     grade: str = '初中'
     subject: str = '语文'
+    ai_provider: str = ''
+    ai_model: str = ''
+    ai_api_key: str = ''
+    ai_base_url: str = ''
     created_at: str = None
     
     def __post_init__(self):
@@ -154,9 +158,11 @@ class UserStorage(JSONStorage):
         
         for i, user in enumerate(users):
             if user.get('id') == user_id:
+                # 更新所有提供的字段，不检查是否已存在
                 for key, value in kwargs.items():
-                    if key in user:
-                        user[key] = value
+                    user[key] = value
+                # 添加更新时间
+                user['updated_at'] = datetime.now().isoformat()
                 cls._save_json(USERS_FILE, users)
                 return user
         return None

@@ -923,9 +923,24 @@ const UserSettings = {
         }
         
         try {
+            // 获取当前AI设置以保留它们
+            const currentSettings = Utils.getUserSettings();
+            
+            const settingsData = {
+                grade,
+                subject,
+                ai_provider: currentSettings.aiProvider || '',
+                ai_model: currentSettings.aiModel || '',
+                ai_base_url: currentSettings.aiBaseUrl || '',
+                ai_api_key: currentSettings.aiApiKey || ''
+            };
+            
             const result = await Utils.apiRequest('/users/settings', {
                 method: 'PUT',
-                body: JSON.stringify({ grade, subject })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settingsData)
             });
             
             if (result && result.success) {
@@ -942,53 +957,74 @@ const UserSettings = {
     },
     
     // 更新AI设置
-    updateAISettings: function() {
+    updateAISettings: async function() {
         const provider = document.getElementById('navAIProvider')?.value;
         const model = document.getElementById('navAIModel')?.value;
         const baseUrl = document.getElementById('navAIBaseUrl')?.value;
         const apiKey = document.getElementById('navAPIKey')?.value;
         
         if (!provider) {
-            console.warn('请选择AI供应商');
+            Utils.showAlert('请选择AI供应商', 'warning');
             return;
         }
         
         // 根据供应商类型验证必需参数
         if (provider === 'Ollama' || provider === 'LMStudio') {
             if (!model || !baseUrl) {
-                console.warn('本地服务需要选择模型和设置Base URL');
+                Utils.showAlert('本地服务需要选择模型和设置Base URL', 'warning');
                 return;
             }
         } else {
             if (!model) {
-                console.warn('云端服务需要选择模型');
+                Utils.showAlert('云端服务需要选择模型', 'warning');
                 return;
             }
         }
         
         try {
-            const settings = {
-                aiProvider: provider,
-                aiModel: model,
-                aiBaseUrl: baseUrl || ''  // 所有供应商都保存base URL
+            // 构建要发送到后端的AI设置数据
+            const aiSettingsData = {
+                ai_provider: provider,
+                ai_model: model,
+                ai_base_url: baseUrl || '',
+                ai_api_key: (provider !== 'Ollama' && provider !== 'LMStudio') ? (apiKey || '') : ''
             };
             
-            // 如果不是本地服务，也保存API Key
-            if (provider !== 'Ollama' && provider !== 'LMStudio') {
-                settings.aiApiKey = apiKey || '';
-            }
+            // 发送到后端保存AI设置
+            const response = await Utils.apiRequest('/users/ai-settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(aiSettingsData)
+            });
             
-            Utils.saveUserSettings(settings);
-            
-            Utils.showAlert('AI设置已保存', 'success', 3000);
-            
-            // 如果是Ollama或LMStudio，刷新模型列表
-            if (provider === 'Ollama' || provider === 'LMStudio') {
-                this.refreshAIModels();
+            if (response.success) {
+                // 同时保存到localStorage以便前端使用
+                const localSettings = {
+                    aiProvider: provider,
+                    aiModel: model,
+                    aiBaseUrl: baseUrl || ''
+                };
+                
+                if (provider !== 'Ollama' && provider !== 'LMStudio') {
+                    localSettings.aiApiKey = apiKey || '';
+                }
+                
+                Utils.saveUserSettings(localSettings);
+                
+                Utils.showAlert('AI设置已保存', 'success', 3000);
+                
+                // 如果是Ollama或LMStudio，刷新模型列表
+                if (provider === 'Ollama' || provider === 'LMStudio') {
+                    this.refreshAIModels();
+                }
+            } else {
+                throw new Error(response.message || '保存失败');
             }
         } catch (error) {
             console.error('保存AI设置失败:', error);
-            Utils.showAlert('保存AI设置失败', 'error');
+            Utils.showAlert('保存AI设置失败: ' + error.message, 'error');
         }
     },
     
@@ -1061,21 +1097,97 @@ const UserSettings = {
     
     // 初始化用户设置
     init: function() {
+        this.loadUserSettings();
+        this.loadAISettings();
+    },
+    
+    loadAISettings: async function() {
+        try {
+            const response = await Utils.apiRequest('/users/ai-settings');
+            if (response.success) {
+                const settings = response.data;
+                
+                // 更新导航栏中的AI设置
+                const aiProviderSelect = document.getElementById('navAIProvider');
+                const aiModelSelect = document.getElementById('navAIModel');
+                const aiBaseUrlInput = document.getElementById('navAIBaseUrl');
+                const apiKeyInput = document.getElementById('navAPIKey');
+                const baseUrlSection = document.getElementById('navBaseUrlSection');
+                
+                if (aiProviderSelect && settings.provider) {
+                    aiProviderSelect.value = settings.provider;
+                    // 触发provider变更事件以更新模型选项
+                    updateNavModelOptions();
+                }
+                if (aiModelSelect && settings.model) {
+                    aiModelSelect.value = settings.model;
+                }
+                if (aiBaseUrlInput && settings.base_url) {
+                    aiBaseUrlInput.value = settings.base_url;
+                }
+                if (apiKeyInput && settings.api_key) {
+                    apiKeyInput.value = settings.api_key;
+                }
+                
+                // 永远显示Base URL字段
+                if (baseUrlSection) baseUrlSection.style.display = 'block';
+                
+                // 同时保存到localStorage
+                Utils.saveUserSettings({
+                    aiProvider: settings.provider,
+                    aiModel: settings.model,
+                    aiBaseUrl: settings.base_url,
+                    aiApiKey: settings.api_key
+                });
+            }
+        } catch (error) {
+            console.error('加载AI设置失败:', error);
+            // 如果后端加载失败，尝试从localStorage加载
+            this.loadLocalAISettings();
+        }
+    },
+    
+    loadUserSettings: async function() {
+        try {
+            const response = await Utils.apiRequest('/users/current');
+            if (response.success && response.data) {
+                const user = response.data;
+                
+                // 更新导航栏中的用户设置
+                const gradeSelect = document.getElementById('navGradeSelect');
+                const subjectSelect = document.getElementById('navSubjectSelect');
+                
+                if (gradeSelect && user.grade) {
+                    gradeSelect.value = user.grade;
+                }
+                if (subjectSelect && user.subject) {
+                    subjectSelect.value = user.subject;
+                }
+                
+                // 同时保存到localStorage
+                Utils.saveUserSettings({
+                    userGrade: user.grade,
+                    userSubject: user.subject
+                });
+            }
+        } catch (error) {
+            console.error('加载用户设置失败:', error);
+            // 如果后端加载失败，尝试从localStorage加载
+            this.loadLocalUserSettings();
+        }
+    },
+    
+    loadLocalAISettings: function() {
         const settings = Utils.getUserSettings();
         
-        // 设置表单值
-        const gradeSelect = document.getElementById('navGradeSelect');
-        const subjectSelect = document.getElementById('navSubjectSelect');
         const providerSelect = document.getElementById('navAIProvider');
         const modelSelect = document.getElementById('navAIModel');
         const baseUrlInput = document.getElementById('navAIBaseUrl');
         const apiKeyInput = document.getElementById('navAPIKey');
         const baseUrlSection = document.getElementById('navBaseUrlSection');
         
-        if (gradeSelect) gradeSelect.value = settings.grade;
-        if (subjectSelect) subjectSelect.value = settings.subject;
-        if (providerSelect) providerSelect.value = settings.aiProvider;
-        if (modelSelect) modelSelect.value = settings.aiModel;
+        if (providerSelect) providerSelect.value = settings.aiProvider || '';
+        if (modelSelect) modelSelect.value = settings.aiModel || '';
         if (baseUrlInput) baseUrlInput.value = settings.aiBaseUrl || '';
         if (apiKeyInput) apiKeyInput.value = settings.aiApiKey || '';
         
@@ -1086,6 +1198,16 @@ const UserSettings = {
         if (settings.aiProvider) {
             updateNavModelOptions();
         }
+    },
+    
+    loadLocalUserSettings: function() {
+        const settings = Utils.getUserSettings();
+        
+        const gradeSelect = document.getElementById('navGradeSelect');
+        const subjectSelect = document.getElementById('navSubjectSelect');
+        
+        if (gradeSelect) gradeSelect.value = settings.grade || '';
+        if (subjectSelect) subjectSelect.value = settings.subject || '';
     }
 };
 

@@ -401,7 +401,7 @@
         
         // 初始化用户设置（仅在登录状态下）
         {% if session.user_id %}
-        initUserSettings();
+        UserSettings.init();
         {% endif %}
         
         console.log('页面初始化完成');

@@ -29,10 +29,10 @@ class AIService:
         self.timeout = config.LLM_TIMEOUT
         # 默认AI设置
         self.default_settings = {
-            'provider': 'ollama',
-            'model': 'llama3.2',
+            'provider': '',
+            'model': '',
             'api_key': '',
-            'base_url': 'http://localhost:11434'
+            'base_url': ''
         }
         
     
