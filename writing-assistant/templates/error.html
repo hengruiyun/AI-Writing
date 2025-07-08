@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}错误 {{ error_code }} - AI智能写作辅导软件{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-container">
+                <div class="error-icon">
+                    {% if error_code == 404 %}
+                        <i class="fas fa-search fa-4x text-muted"></i>
+                    {% elif error_code == 500 %}
+                        <i class="fas fa-exclamation-triangle fa-4x text-danger"></i>
+                    {% else %}
+                        <i class="fas fa-exclamation-circle fa-4x text-warning"></i>
+                    {% endif %}
+                </div>
+                
+                <h1 class="error-code">{{ error_code }}</h1>
+                
+                <h3 class="error-title">
+                    {% if error_code == 404 %}
+                        页面未找到
+                    {% elif error_code == 500 %}
+                        服务器错误
+                    {% else %}
+                        出现错误
+                    {% endif %}
+                </h3>
+                
+                <p class="error-message">
+                    {% if error_message %}
+                        {{ error_message }}
+                    {% else %}
+                        {% if error_code == 404 %}
+                            抱歉，您访问的页面不存在。
+                        {% elif error_code == 500 %}
+                            服务器遇到了一个错误，请稍后再试。
+                        {% else %}
+                            系统遇到了一个错误。
+                        {% endif %}
+                    {% endif %}
+                </p>
+                
+                <div class="error-actions">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> 返回首页
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i> 返回上页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.error-container {
+    padding: 60px 20px;
+}
+
+.error-icon {
+    margin-bottom: 30px;
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: bold;
+    color: #6c757d;
+    margin-bottom: 20px;
+    line-height: 1;
+}
+
+.error-title {
+    color: #495057;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+    line-height: 1.6;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+    .error-code {
+        font-size: 4rem;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .error-actions .btn {
+        width: 200px;
+    }
+}
+</style>
+{% endblock %}

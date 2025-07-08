@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "username": "267278466@qq.com",
+    "password_hash": "0dea7250c3bd0a3a462acab1cf931cfa$51218d055525fbc3227c91ec15d684bc1e693cbe2574fe1b1ba5107e6cceb43c",
+    "grade": "初中",
+    "subject": "语文",
+    "created_at": "2025-07-07T23:12:26.092924"
+  }
+]

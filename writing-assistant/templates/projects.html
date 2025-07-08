@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}我的项目 - AI智能写作辅导软件{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>我的写作项目</h2>
+                <a href="{{ url_for('main.setup') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新建项目
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    {% if projects %}
+    <div class="row">
+        {% for project in projects %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title">{{ project.title }}</h5>
+                        <span class="badge bg-{{ 'success' if project.status == 'completed' else 'primary' if project.status == 'writing' else 'secondary' }}">
+                            {% if project.status == 'completed' %}
+                                已完成
+                            {% elif project.status == 'writing' %}
+                                写作中
+                            {% else %}
+                                草稿
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <p class="card-text text-muted small mb-2">
+                        <strong>题目：</strong>{{ project.topic[:50] }}{% if project.topic|length > 50 %}...{% endif %}
+                    </p>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <small class="text-muted">学科</small><br>
+                            <strong>{{ project.subject }}</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">类型</small><br>
+                            <strong>{{ project.article_type }}</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">字数</small><br>
+                            <strong>{{ project.word_count }}</strong>
+                        </div>
+                    </div>
+                    
+                    {% if project.final_score > 0 %}
+                    <div class="text-center mb-3">
+                        <div class="score-circle">
+                            <span class="score-text">{{ project.final_score }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        {% if project.status == 'completed' %}
+                            <a href="{{ url_for('main.review', project_id=project.id) }}" class="btn btn-outline-primary btn-sm flex-fill">
+                                查看评分
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('main.writing', project_id=project.id) }}" class="btn btn-primary btn-sm flex-fill">
+                                继续写作
+                            </a>
+                        {% endif %}
+                        
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteProject({{ project.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-muted small">
+                    更新时间：{{ project.updated_at[:19] if project.updated_at else project.created_at[:19] }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">还没有写作项目</h4>
+                <p class="text-muted">创建您的第一个写作项目，开始AI辅助写作之旅</p>
+                <a href="{{ url_for('main.setup') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus"></i> 创建第一个项目
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                确定要删除这个项目吗？此操作无法撤销。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.score-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.score-text {
+    font-size: 18px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let projectToDelete = null;
+
+// 删除项目函数
+async function deleteProject(projectId) {
+    projectToDelete = projectId;
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// 确认删除
+document.getElementById('confirmDelete').addEventListener('click', async function() {
+    if (!projectToDelete) return;
+    
+    try {
+        const response = await Utils.apiRequest(`/projects/${projectToDelete}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.success) {
+            Utils.showAlert('项目删除成功', 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            Utils.showAlert(response.message, 'error');
+        }
+    } catch (error) {
+        Utils.showAlert('删除失败：' + error.message, 'error');
+    }
+    
+    // 关闭模态框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+    modal.hide();
+    projectToDelete = null;
+});
+</script>
+{% endblock %}

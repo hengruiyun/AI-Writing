@@ -1,0 +1,610 @@
+/* 移动端优化样式 */
+
+/* 触摸友好的交互 */
+@media (hover: none) and (pointer: coarse) {
+    /* 移动设备上的按钮样式 */
+    .btn {
+        min-height: 44px; /* iOS推荐的最小触摸目标 */
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    /* 增大可点击区域 */
+    .nav-link {
+        padding: 1rem 0.75rem;
+    }
+    
+    /* 表单控件优化 */
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        font-size: 16px; /* 防止iOS自动缩放 */
+        padding: 0.75rem 1rem;
+    }
+    
+    /* 移除悬停效果 */
+    .btn:hover,
+    .card:hover,
+    .feature-card:hover {
+        transform: none;
+        box-shadow: inherit;
+    }
+}
+
+/* 小屏幕设备优化 */
+@media (max-width: 767.98px) {
+    /* 容器间距调整 */
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* 导航栏优化 */
+    .navbar {
+        padding: 0.5rem 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+    
+    .navbar-collapse {
+        margin-top: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        padding-top: 1rem;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.75rem 0;
+        font-size: 1.1rem;
+    }
+    
+    /* 英雄区域移动端优化 */
+    .hero-section {
+        padding: 4rem 0;
+        min-height: 80vh;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-button {
+        display: block;
+        width: 90%;
+        max-width: 300px;
+        margin: 0.75rem auto;
+        font-size: 1.1rem;
+        padding: 1rem 2rem;
+    }
+    
+    /* 特性卡片移动端优化 */
+    .features-section {
+        padding: 4rem 0;
+    }
+    
+    .section-title h2 {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .section-title p {
+        font-size: 1rem;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .feature-card {
+        padding: 2rem 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-title {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .feature-description {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    /* 项目卡片移动端优化 */
+    .project-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .project-header {
+        padding: 1rem;
+    }
+    
+    .project-body {
+        padding: 1.5rem;
+    }
+    
+    .project-stats {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin: 1rem 0;
+        padding: 1rem;
+    }
+    
+    .stat-item {
+        text-align: left;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* 写作界面移动端优化 */
+    .writing-workspace {
+        margin: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .stage-tabs {
+        padding: 0.75rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .stage-tab {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .writing-area {
+        padding: 1rem;
+    }
+    
+    .writing-textarea {
+        min-height: 300px;
+        font-size: 1rem;
+        line-height: 1.6;
+        padding: 1rem;
+    }
+    
+    /* AI助手面板移动端优化 */
+    .ai-assistant-panel {
+        margin: 1rem 0.5rem;
+        padding: 1.5rem;
+        position: static;
+    }
+    
+    .ai-assistant-header {
+        margin-bottom: 1rem;
+    }
+    
+    .ai-assistant-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .ai-assistant-title {
+        font-size: 1.25rem;
+    }
+    
+    .ai-suggestion {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* 评分页面移动端优化 */
+    .score-circle {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .score-number {
+        font-size: 2rem;
+    }
+    
+    .dimension-scores {
+        margin-top: 1.5rem;
+    }
+    
+    .dimension-score {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* 模态框移动端优化 */
+    .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+    
+    .modal-content {
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        margin: 0;
+    }
+    
+    /* 表单移动端优化 */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-width: 2px;
+        padding: calc(0.75rem - 1px) calc(1rem - 1px);
+    }
+    
+    /* 复选框和单选框优化 */
+    .form-check {
+        margin-bottom: 1rem;
+    }
+    
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.125rem;
+    }
+    
+    .form-check-label {
+        font-size: 1rem;
+        margin-left: 0.5rem;
+    }
+    
+    /* 页脚移动端优化 */
+    .footer {
+        padding: 3rem 0 2rem;
+    }
+    
+    .footer .row > div {
+        margin-bottom: 2rem;
+    }
+    
+    .footer-title {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .footer-links {
+        font-size: 0.95rem;
+    }
+    
+    .footer-links li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .social-links {
+        justify-content: flex-start;
+        gap: 1rem;
+    }
+    
+    .social-link {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+    
+    /* 面包屑移动端优化 */
+    .breadcrumb-nav {
+        padding: 0.75rem 0;
+    }
+    
+    .breadcrumb {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        padding: 0 0.25rem;
+    }
+    
+    /* 返回顶部按钮移动端优化 */
+    .back-to-top {
+        width: 50px;
+        height: 50px;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 1.25rem;
+    }
+    
+    /* 提示消息移动端优化 */
+    .alert-container {
+        padding: 1rem;
+        right: 0;
+        left: 0;
+        top: auto;
+        bottom: 0;
+    }
+    
+    .alert {
+        margin-bottom: 0.75rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+    }
+    
+    /* 加载状态移动端优化 */
+    .global-loading .loading-content {
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 90%;
+    }
+    
+    .loading-text {
+        font-size: 1rem;
+        margin-top: 1rem;
+    }
+    
+    /* 统计数据移动端优化 */
+    .stats-section {
+        padding: 4rem 0;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .stat-item {
+        padding: 1.5rem 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+    }
+    
+    /* CTA区域移动端优化 */
+    .cta-section {
+        padding: 4rem 0;
+    }
+    
+    .cta-title {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .cta-description {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+}
+
+/* 超小屏幕设备优化 */
+@media (max-width: 575.98px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    .section-title h2 {
+        font-size: 1.75rem;
+    }
+    
+    .feature-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .cta-title {
+        font-size: 1.75rem;
+    }
+    
+    /* 写作界面超小屏优化 */
+    .writing-textarea {
+        min-height: 250px;
+        font-size: 0.95rem;
+        padding: 0.75rem;
+    }
+    
+    .ai-assistant-panel {
+        margin: 0.75rem 0.25rem;
+        padding: 1rem;
+    }
+    
+    /* 表单超小屏优化 */
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .form-control,
+    .form-select {
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+}
+
+/* 横屏模式优化 */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero-section {
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .hero-buttons {
+        margin-top: 1rem;
+    }
+    
+    .modal-body {
+        max-height: 50vh;
+    }
+}
+
+/* 可访问性增强 */
+@media (prefers-reduced-motion: reduce) {
+    .hero-section::before,
+    .floating-element,
+    .pulse,
+    .loading-spinner {
+        animation: none;
+    }
+    
+    .btn,
+    .card,
+    .feature-card {
+        transition: none;
+    }
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    .btn {
+        border-width: 2px;
+    }
+    
+    .card,
+    .feature-card {
+        border: 2px solid #333;
+    }
+    
+    .form-control,
+    .form-select {
+        border-width: 2px;
+    }
+}
+
+/* 深色模式移动端优化 */
+@media (prefers-color-scheme: dark) and (max-width: 767.98px) {
+    .navbar {
+        background: rgba(30, 30, 30, 0.95) !important;
+    }
+    
+    .hero-section {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    }
+    
+    .features-section {
+        background: #1a202c;
+    }
+    
+    .feature-card {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .footer {
+        background: #1a202c;
+        color: #e2e8f0;
+    }
+}
+
+/* PWA支持 */
+@media (display-mode: standalone) {
+    .navbar {
+        padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+    }
+    
+    .main-content {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+    }
+    
+    .back-to-top {
+        bottom: calc(env(safe-area-inset-bottom) + 1rem);
+    }
+    
+    .alert-container {
+        bottom: calc(env(safe-area-inset-bottom) + 1rem);
+    }
+}
+
+/* 打印样式移动端优化 */
+@media print {
+    .navbar,
+    .breadcrumb-nav,
+    .footer,
+    .back-to-top,
+    .ai-assistant-panel,
+    .hero-buttons {
+        display: none !important;
+    }
+    
+    .hero-section {
+        background: none !important;
+        color: black !important;
+        padding: 1rem 0;
+    }
+    
+    .main-content {
+        margin-top: 0;
+    }
+    
+    .container {
+        max-width: 100%;
+        padding: 0;
+    }
+} 

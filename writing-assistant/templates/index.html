@@ -1,0 +1,971 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能写作辅导软件 - AI驱动的写作学习平台{% endblock %}
+
+{% block og_title %}AI智能写作辅导软件 - AI驱动的写作学习平台{% endblock %}
+
+{% block head %}
+<style>
+/* 首页专用样式 */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8rem 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff" opacity="0.1"><polygon points="1000,100 1000,0 0,100"/></svg>');
+    background-size: cover;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero-title {
+    font-size: 4rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    animation: slideInUp 1s ease-out;
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 3rem;
+    opacity: 0.95;
+    animation: slideInUp 1s ease-out 0.2s both;
+}
+
+.hero-buttons {
+    animation: slideInUp 1s ease-out 0.4s both;
+}
+
+.hero-button {
+    font-size: 1.2rem;
+    padding: 1rem 3rem;
+    border-radius: 50px;
+    background: white;
+    color: #667eea;
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: inline-block;
+    margin: 0 1rem 1rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.hero-button:hover::before {
+    left: 100%;
+}
+
+.hero-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    color: #667eea;
+}
+
+.hero-button-secondary {
+    background: transparent;
+    color: white;
+    border: 2px solid white;
+}
+
+.hero-button-secondary:hover {
+    background: white;
+    color: #667eea;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 特性展示区域 */
+.features-section {
+    padding: 8rem 0;
+    background: #f8f9fa;
+    position: relative;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-title h2 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.section-title p {
+    font-size: 1.2rem;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 3rem;
+    margin-top: 4rem;
+}
+
+.feature-card {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover::before {
+    transform: scaleX(1);
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon {
+    font-size: 4rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 2rem;
+    display: block;
+}
+
+.feature-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.feature-description {
+    color: #666;
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+/* 统计数据区域 */
+.stats-section {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    text-align: center;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 3rem;
+    margin-top: 3rem;
+}
+
+.stat-item {
+    padding: 2rem;
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: block;
+    counter-reset: stat-counter;
+    animation: countUp 2s ease-out;
+}
+
+.stat-label {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* CTA区域 */
+.cta-section {
+    padding: 8rem 0;
+    background: white;
+    text-align: center;
+}
+
+.cta-content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.cta-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.cta-description {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 3rem;
+    line-height: 1.8;
+}
+
+/* 浮动元素 */
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.floating-element {
+    position: absolute;
+    opacity: 0.1;
+    animation: floatAround 20s infinite linear;
+}
+
+.floating-element:nth-child(1) {
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.floating-element:nth-child(2) {
+    top: 60%;
+    right: 10%;
+    animation-delay: -5s;
+}
+
+.floating-element:nth-child(3) {
+    bottom: 20%;
+    left: 20%;
+    animation-delay: -10s;
+}
+
+@keyframes floatAround {
+    0% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(-30px) rotate(120deg); }
+    66% { transform: translateY(-60px) rotate(240deg); }
+    100% { transform: translateY(0px) rotate(360deg); }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .hero-button {
+        font-size: 1rem;
+        padding: 0.75rem 2rem;
+        margin: 0.5rem;
+        display: block;
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .section-title h2 {
+        font-size: 2rem;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .feature-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .cta-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 4rem 0;
+    }
+    
+    .features-section,
+    .stats-section,
+    .cta-section {
+        padding: 4rem 0;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 滚动指示器 */
+.scroll-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    animation: bounce 2s infinite;
+    cursor: pointer;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    40% {
+        transform: translateX(-50%) translateY(-10px);
+    }
+    60% {
+        transform: translateX(-50%) translateY(-5px);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 英雄区域 -->
+<section class="hero-section">
+    <div class="floating-elements">
+        <div class="floating-element">
+            <i class="fas fa-pen fa-3x"></i>
+        </div>
+        <div class="floating-element">
+            <i class="fas fa-brain fa-3x"></i>
+        </div>
+        <div class="floating-element">
+            <i class="fas fa-lightbulb fa-3x"></i>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">AI智能写作辅导软件</h1>
+            <p class="hero-subtitle">
+                AI驱动的个性化写作学习平台<br>
+                让每一次写作都成为进步的阶梯
+            </p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('main.projects') }}" class="hero-button">
+                    <i class="fas fa-rocket me-2"></i>
+                    开始写作之旅
+                </a>
+                <button type="button" class="hero-button hero-button-secondary" onclick="showAISettings()">
+                    <i class="fas fa-cog me-2"></i>
+                    AI设置
+                </button>
+                <a href="#features" class="hero-button hero-button-secondary">
+                    <i class="fas fa-info-circle me-2"></i>
+                    了解更多
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scroll-indicator" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+        <i class="fas fa-chevron-down fa-2x"></i>
+    </div>
+</section>
+
+<!-- 特性展示区域 -->
+<section id="features" class="features-section">
+    <div class="container">
+        <div class="section-title fade-in">
+            <h2>为什么选择我们？</h2>
+            <p>基于先进AI技术，提供全方位的写作辅助和学习支持</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card slide-in-left">
+                <i class="fas fa-brain feature-icon"></i>
+                <h3 class="feature-title">AI智能分析</h3>
+                <p class="feature-description">
+                    先进的自然语言处理技术，深度分析写作内容，
+                    提供精准的改进建议和个性化指导。
+                </p>
+            </div>
+            
+            <div class="feature-card fade-in">
+                <i class="fas fa-route feature-icon"></i>
+                <h3 class="feature-title">三阶段写作</h3>
+                <p class="feature-description">
+                    科学的写作流程：构思→提纲→正文，
+                    循序渐进，帮助学生建立良好的写作习惯。
+                </p>
+            </div>
+            
+            <div class="feature-card slide-in-right">
+                <i class="fas fa-chart-line feature-icon"></i>
+                <h3 class="feature-title">实时评分</h3>
+                <p class="feature-description">
+                    多维度评分体系，从内容、结构、语言、创新
+                    四个方面全面评估，让进步看得见。
+                </p>
+            </div>
+            
+            <div class="feature-card slide-in-left">
+                <i class="fas fa-user-graduate feature-icon"></i>
+                <h3 class="feature-title">个性化学习</h3>
+                <p class="feature-description">
+                    根据学生年级、学科特点，提供个性化的
+                    题目生成和写作指导，因材施教。
+                </p>
+            </div>
+            
+            <div class="feature-card fade-in">
+                <i class="fas fa-save feature-icon"></i>
+                <h3 class="feature-title">自动保存</h3>
+                <p class="feature-description">
+                    智能自动保存机制，永不丢失创作灵感，
+                    支持多设备同步，随时随地继续写作。
+                </p>
+            </div>
+            
+            <div class="feature-card slide-in-right">
+                <i class="fas fa-mobile-alt feature-icon"></i>
+                <h3 class="feature-title">响应式设计</h3>
+                <p class="feature-description">
+                    完美适配手机、平板、电脑等各种设备，
+                    优雅的界面设计，流畅的使用体验。
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 统计数据区域 -->
+<section class="stats-section">
+    <div class="container">
+        <div class="section-title">
+            <h2>平台数据一览</h2>
+            <p>持续为学生提供优质的写作学习服务</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-number" data-target="1000">0</span>
+                <div class="stat-label">注册用户</div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-target="5000">0</span>
+                <div class="stat-label">完成作文</div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-target="15000">0</span>
+                <div class="stat-label">AI建议</div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" data-target="98">0</span>
+                <div class="stat-label">满意度%</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA区域 -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content fade-in">
+            <h2 class="cta-title">准备好开始了吗？</h2>
+            <p class="cta-description">
+                加入我们的智能写作学习平台，体验AI辅助写作的魅力，
+                让技术成为您写作路上的得力助手。
+            </p>
+            <a href="{{ url_for('main.projects') }}" class="hero-button">
+                <i class="fas fa-user-plus me-2"></i>
+                立即注册
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- AI设置模态框 -->
+<div class="modal fade" id="aiSettingsModal" tabindex="-1" aria-labelledby="aiSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiSettingsModalLabel">
+                    <i class="fas fa-robot me-2"></i>AI设置
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="aiSettingsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="aiProvider" class="form-label">AI供应商</label>
+                                <select class="form-select" id="aiProvider" name="provider" required>
+                                    <option value="">请选择AI供应商</option>
+                                    <option value="OpenAI">OpenAI</option>
+                                    <option value="Anthropic">Anthropic</option>
+                                    <option value="Google">Google</option>
+                                    <option value="Groq">Groq</option>
+                                    <option value="DeepSeek">DeepSeek</option>
+                                    <option value="Ollama">Ollama (本地)</option>
+                                    <option value="LMStudio">LM Studio (本地)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="aiModel" class="form-label">AI模型</label>
+                                <select class="form-select" id="aiModel" name="model" required>
+                                    <option value="">请先选择供应商</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="apiKeySection" style="display: none;">
+                        <label for="apiKey" class="form-label">API Key</label>
+                        <input type="password" class="form-control" id="apiKey" name="api_key" placeholder="输入您的API Key">
+                        <div class="form-text">API Key将安全保存在本地，不会上传到服务器</div>
+                    </div>
+                    
+                    <div class="mb-3" id="baseUrlSection" style="display: none;">
+                        <label for="baseUrl" class="form-label">API Base URL</label>
+                        <input type="url" class="form-control" id="baseUrl" name="base_url" placeholder="例如：http://localhost:11434">
+                        <div class="form-text">本地服务器地址</div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>提示：</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>云端服务需要API Key，本地服务无需API Key</li>
+                            <li>推荐使用OpenAI GPT-4或Anthropic Claude获得最佳体验</li>
+                            <li>本地模型需要先启动对应的服务器</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="testAIConnection()">测试连接</button>
+                <button type="button" class="btn btn-success" onclick="saveAISettings()">保存设置</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 数字动画
+    function animateNumbers() {
+        const numbers = document.querySelectorAll('.stat-number');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = parseInt(entry.target.dataset.target);
+                    animateNumber(entry.target, target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        });
+        
+        numbers.forEach(number => observer.observe(number));
+    }
+    
+    function animateNumber(element, target) {
+        let current = 0;
+        const increment = target / 50;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            element.textContent = Math.floor(current);
+        }, 40);
+    }
+    
+    // 滚动动画
+    function initScrollAnimations() {
+        const elements = document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0) translateX(0)';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+        
+        elements.forEach(element => {
+            element.style.opacity = '0';
+            if (element.classList.contains('slide-in-left')) {
+                element.style.transform = 'translateX(-50px)';
+            } else if (element.classList.contains('slide-in-right')) {
+                element.style.transform = 'translateX(50px)';
+            } else {
+                element.style.transform = 'translateY(30px)';
+            }
+            element.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            observer.observe(element);
+        });
+    }
+    
+    // 平滑滚动
+    function initSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    }
+    
+    // 鼠标跟随效果
+    function initMouseFollower() {
+        if (Utils.device.isMobile()) return; // 移动端不启用
+        
+        const cursor = document.createElement('div');
+        cursor.className = 'cursor-follower';
+        cursor.style.cssText = `
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.3);
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            transform: translate(-50%, -50%);
+        `;
+        document.body.appendChild(cursor);
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+        
+        document.addEventListener('mousedown', () => {
+            cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+    }
+    
+    // 视差滚动效果
+    function initParallax() {
+        const heroSection = document.querySelector('.hero-section');
+        
+        window.addEventListener('scroll', Utils.throttle(() => {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            
+            if (heroSection) {
+                heroSection.style.transform = `translateY(${rate}px)`;
+            }
+        }, 16));
+    }
+    
+    // 初始化所有功能
+    animateNumbers();
+    initScrollAnimations();
+    initSmoothScroll();
+    initMouseFollower();
+    initParallax();
+    loadAISettings();
+    
+    // 性能监控
+    Utils.performance.mark('homepage-interactive');
+    
+    console.log('首页交互功能已加载完成');
+});
+
+// AI设置相关功能
+const AI_MODELS = {
+    'OpenAI': ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
+    'Anthropic': ['claude-3-5-haiku-latest', 'claude-3-5-sonnet-latest'],
+    'Google': ['gemini-2.0-flash-exp', 'gemini-1.5-pro'],
+    'Groq': ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
+    'DeepSeek': ['deepseek-chat', 'deepseek-reasoner'],
+    'Ollama': [],
+    'LMStudio': []
+};
+
+function showAISettings() {
+    const modal = new bootstrap.Modal(document.getElementById('aiSettingsModal'));
+    modal.show();
+}
+
+function loadAISettings() {
+    const userSettings = Utils.getUserSettings();
+    if (userSettings.aiProvider) {
+        document.getElementById('aiProvider').value = userSettings.aiProvider;
+        updateModelOptions();
+        document.getElementById('aiModel').value = userSettings.aiModel || '';
+        document.getElementById('apiKey').value = localStorage.getItem('aiApiKey') || '';
+        document.getElementById('baseUrl').value = userSettings.aiBaseUrl || '';
+        updateFormFields();
+    }
+}
+
+// 供应商选择变化时更新模型选项
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('aiProvider').addEventListener('change', function() {
+        updateModelOptions();
+        updateFormFields();
+    });
+    
+    // BaseUrl改变时自动刷新模型列表
+    document.getElementById('baseUrl').addEventListener('blur', function() {
+        const provider = document.getElementById('aiProvider').value;
+        if (provider === 'Ollama' || provider === 'LMStudio') {
+            updateModelOptions();
+        }
+    });
+    
+    // 实时监听BaseUrl变化
+    document.getElementById('baseUrl').addEventListener('input', Utils.debounce(function() {
+        const provider = document.getElementById('aiProvider').value;
+        if (provider === 'Ollama' || provider === 'LMStudio') {
+            updateModelOptions();
+        }
+    }, 1000)); // 1秒延迟，避免频繁请求
+});
+
+function updateModelOptions() {
+    const provider = document.getElementById('aiProvider').value;
+    const modelSelect = document.getElementById('aiModel');
+    
+    modelSelect.innerHTML = '<option value="">加载中...</option>';
+    
+    if (provider === 'Ollama' || provider === 'LMStudio') {
+        // 获取本地模型列表
+        fetchLocalModels(provider);
+    } else if (AI_MODELS[provider]) {
+        // 使用预定义的云端模型列表
+        modelSelect.innerHTML = '<option value="">请选择模型</option>';
+        AI_MODELS[provider].forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modelSelect.appendChild(option);
+        });
+    } else {
+        modelSelect.innerHTML = '<option value="">请先选择供应商</option>';
+    }
+}
+
+function updateFormFields() {
+    const provider = document.getElementById('aiProvider').value;
+    const apiKeySection = document.getElementById('apiKeySection');
+    const baseUrlSection = document.getElementById('baseUrlSection');
+    
+    if (provider === 'Ollama' || provider === 'LMStudio') {
+        apiKeySection.style.display = 'none';
+        baseUrlSection.style.display = 'block';
+        
+        // 设置默认URL
+        if (provider === 'Ollama') {
+            document.getElementById('baseUrl').value = 'http://localhost:11434';
+        } else if (provider === 'LMStudio') {
+            document.getElementById('baseUrl').value = 'http://localhost:1234';
+        }
+    } else if (provider) {
+        apiKeySection.style.display = 'block';
+        baseUrlSection.style.display = 'none';
+    } else {
+        apiKeySection.style.display = 'none';
+        baseUrlSection.style.display = 'none';
+    }
+}
+
+async function fetchLocalModels(provider) {
+    try {
+        const baseUrl = document.getElementById('baseUrl').value;
+        let url = `/api/ai/models/${provider.toLowerCase()}`;
+        
+        // 如果有自定义BaseUrl，将其作为参数传递
+        if (baseUrl) {
+            url += `?base_url=${encodeURIComponent(baseUrl)}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const modelSelect = document.getElementById('aiModel');
+        modelSelect.innerHTML = '<option value="">请选择模型</option>';
+        
+        if (data.success && data.data.length > 0) {
+            data.data.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                modelSelect.appendChild(option);
+            });
+            Utils.showAlert(`成功获取到 ${data.data.length} 个${provider}模型`, 'success', 2000);
+        } else {
+            modelSelect.innerHTML = '<option value="">未找到可用模型</option>';
+            Utils.showAlert(`未找到可用的${provider}模型，请检查服务器是否运行`, 'warning');
+        }
+    } catch (error) {
+        console.error('获取模型列表失败:', error);
+        const modelSelect = document.getElementById('aiModel');
+        modelSelect.innerHTML = '<option value="">获取模型失败</option>';
+        Utils.showAlert(`获取${provider}模型列表失败: ${error.message}`, 'error');
+    }
+}
+
+async function testAIConnection() {
+    const form = document.getElementById('aiSettingsForm');
+    const formData = new FormData(form);
+    const settings = Object.fromEntries(formData);
+    
+    if (!settings.provider || !settings.model) {
+        alert('请先选择AI供应商和模型');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/ai/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('连接测试成功！');
+        } else {
+            alert('连接测试失败：' + data.message);
+        }
+    } catch (error) {
+        alert('连接测试失败：' + error.message);
+    }
+}
+
+function saveAISettings() {
+    const form = document.getElementById('aiSettingsForm');
+    const formData = new FormData(form);
+    const settings = Object.fromEntries(formData);
+    
+    if (!settings.provider || !settings.model) {
+        alert('请先选择AI供应商和模型');
+        return;
+    }
+    
+    // 保存到本地存储
+    const userSettings = {
+        aiProvider: settings.provider,
+        aiModel: settings.model,
+        aiBaseUrl: settings.base_url || ''
+    };
+    
+    // 如果不是本地服务，也保存API Key
+    if (settings.provider !== 'Ollama' && settings.provider !== 'LMStudio') {
+        localStorage.setItem('aiApiKey', settings.api_key || '');
+    }
+    
+    Utils.saveUserSettings(userSettings);
+    
+    // 关闭模态框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('aiSettingsModal'));
+    modal.hide();
+    
+    alert('AI设置已保存！');
+}
+</script>
+{% endblock %}

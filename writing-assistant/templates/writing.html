@@ -1,0 +1,2209 @@
+{% extends "base.html" %}
+
+{% block title %}写作 - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="writing-container">
+    <!-- 项目信息栏 -->
+    <div class="project-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h3>{{ project.title }}</h3>
+                <p class="text-muted mb-0">{{ project.subject }} · {{ project.article_type }}</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="word-count">
+                    <small class="text-muted">字数：</small>
+                    <span id="wordCount">{{ project.word_count }}</span>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        操作
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="saveProject(true)">
+                            <i class="fas fa-save"></i> 保存
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="evaluateProject()">
+                            <i class="fas fa-check-circle"></i> 完成评分
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.projects') }}">
+                            <i class="fas fa-arrow-left"></i> 返回项目列表
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 题目显示 -->
+        <div class="topic-display">
+            <div class="topic-card">
+                <h6 class="topic-label">写作题目</h6>
+                <p class="topic-text">{{ project.topic }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 写作阶段导航 -->
+    <div class="writing-stages">
+        <div class="stage-nav">
+            <button class="stage-btn active" data-stage="brainstorm">
+                <i class="fas fa-lightbulb"></i>
+                <span>构思</span>
+            </button>
+            <button class="stage-btn" data-stage="outline">
+                <i class="fas fa-list"></i>
+                <span>提纲</span>
+            </button>
+            <button class="stage-btn" data-stage="writing">
+                <i class="fas fa-pen"></i>
+                <span>正文</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 写作内容区域 -->
+    <div class="writing-content">
+        <div class="row g-3">
+            <div class="col-xl-8 col-lg-7 col-md-8">
+                <!-- 构思阶段 -->
+                <div class="stage-content active" id="brainstorm-stage">
+                    <div class="stage-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5><i class="fas fa-lightbulb text-warning me-2"></i>构思阶段</h5>
+                                <p class="text-muted mb-0">整理思路，记录灵感和想法</p>
+                            </div>
+                            <div class="stage-actions">
+                                <button class="btn btn-outline-primary btn-sm me-2" onclick="getAISuggestions()">
+                                    <i class="fas fa-magic"></i> AI建议
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="saveProject(true)">
+                                    <i class="fas fa-save"></i> 保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="textarea-container">
+                        <textarea class="form-control stage-textarea" id="brainstormContent" 
+                                  placeholder="💡 在这里记录您的想法、灵感和构思...&#10;&#10;🎯 写作提示：&#10;• 围绕题目核心思考多个角度&#10;• 收集相关的事例和素材&#10;• 确定文章的主要观点&#10;• 考虑读者的兴趣点&#10;• 思考文章的创新之处">{{ project.brainstorm_content or '' }}</textarea>
+                        <div class="textarea-footer">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                构思阶段重在发散思维，记录所有相关想法
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- 构思阶段的统计和评分 -->
+                    <div class="stage-bottom-panel mt-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <!-- 写作统计 -->
+                                <div class="writing-stats">
+                                    <h6><i class="fas fa-chart-bar text-info me-2"></i>写作统计</h6>
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-font"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">当前字数</span>
+                                                <span class="stat-value" id="currentWordCount">0</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-target"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">目标字数</span>
+                                                <span class="stat-value">800-1000</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-percentage"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">完成度</span>
+                                                <div class="progress mt-1">
+                                                    <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- 构思评分 -->
+                                <div class="stage-rating">
+                                    <h6><i class="fas fa-star text-warning me-2"></i>构思评分</h6>
+                                    <div class="rating-item">
+                                        <div class="rating-stars">
+                                            <div class="star-rating" data-stage="brainstorm">
+                                                <span class="star" data-value="1">★</span>
+                                                <span class="star" data-value="2">★</span>
+                                                <span class="star" data-value="3">★</span>
+                                                <span class="star" data-value="4">★</span>
+                                                <span class="star" data-value="5">★</span>
+                                            </div>
+                                            <span class="rating-text" id="brainstormRatingText">未评分</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 提纲阶段 -->
+                <div class="stage-content" id="outline-stage">
+                    <div class="stage-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5><i class="fas fa-list text-info me-2"></i>提纲阶段</h5>
+                                <p class="text-muted mb-0">整理结构，制定写作大纲</p>
+                            </div>
+                            <div class="stage-actions">
+                                <button class="btn btn-outline-primary btn-sm me-2" onclick="getAISuggestions()">
+                                    <i class="fas fa-magic"></i> AI建议
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="saveProject(true)">
+                                    <i class="fas fa-save"></i> 保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="textarea-container">
+                        <textarea class="form-control stage-textarea" id="outlineContent" 
+                                  placeholder="📝 在这里制定您的写作大纲...&#10;&#10;🎯 提纲要点：&#10;• 确定文章的基本结构（总分总等）&#10;• 安排各段落的主要内容&#10;• 理清段落间的逻辑关系&#10;• 设计好开头和结尾&#10;• 确保内容层次分明">{{ project.outline_content or '' }}</textarea>
+                        <div class="textarea-footer">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                提纲阶段重在理清结构，确保逻辑清晰
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- 提纲阶段的统计和评分 -->
+                    <div class="stage-bottom-panel mt-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <!-- 写作统计 -->
+                                <div class="writing-stats">
+                                    <h6><i class="fas fa-chart-bar text-info me-2"></i>写作统计</h6>
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-font"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">当前字数</span>
+                                                <span class="stat-value" id="currentWordCount2">0</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-target"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">目标字数</span>
+                                                <span class="stat-value">800-1000</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-percentage"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">完成度</span>
+                                                <div class="progress mt-1">
+                                                    <div class="progress-bar" id="progressBar2" role="progressbar" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- 提纲评分 -->
+                                <div class="stage-rating">
+                                    <h6><i class="fas fa-star text-warning me-2"></i>提纲评分</h6>
+                                    <div class="rating-item">
+                                        <div class="rating-stars">
+                                            <div class="star-rating" data-stage="outline">
+                                                <span class="star" data-value="1">★</span>
+                                                <span class="star" data-value="2">★</span>
+                                                <span class="star" data-value="3">★</span>
+                                                <span class="star" data-value="4">★</span>
+                                                <span class="star" data-value="5">★</span>
+                                            </div>
+                                            <span class="rating-text" id="outlineRatingText">未评分</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 正文阶段 -->
+                <div class="stage-content" id="writing-stage">
+                    <div class="stage-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5><i class="fas fa-pen text-success me-2"></i>正文写作</h5>
+                                <p class="text-muted mb-0">完成文章正文，表达您的观点</p>
+                            </div>
+                            <div class="stage-actions">
+                                <button class="btn btn-outline-primary btn-sm me-2" onclick="getAISuggestions()">
+                                    <i class="fas fa-magic"></i> AI建议
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="saveProject(true)">
+                                    <i class="fas fa-save"></i> 保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="textarea-container">
+                        <textarea class="form-control stage-textarea" id="writingContent" 
+                                  placeholder="✍️ 在这里写作您的文章正文...&#10;&#10;🎯 写作要点：&#10;• 用词准确生动&#10;• 句式富有变化&#10;• 适当运用修辞手法&#10;• 注意段落间的过渡&#10;• 保持语言风格统一">{{ project.writing_content or '' }}</textarea>
+                        <div class="textarea-footer">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                正文阶段重在表达，注意语言的准确性和生动性
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- 正文阶段的统计和评分 -->
+                    <div class="stage-bottom-panel mt-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <!-- 写作统计 -->
+                                <div class="writing-stats">
+                                    <h6><i class="fas fa-chart-bar text-info me-2"></i>写作统计</h6>
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-font"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">当前字数</span>
+                                                <span class="stat-value" id="currentWordCount3">0</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-target"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">目标字数</span>
+                                                <span class="stat-value">800-1000</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-percentage"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <span class="stat-label">完成度</span>
+                                                <div class="progress mt-1">
+                                                    <div class="progress-bar" id="progressBar3" role="progressbar" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- 正文评分 -->
+                                <div class="stage-rating">
+                                    <h6><i class="fas fa-star text-warning me-2"></i>正文评分</h6>
+                                    <div class="rating-item">
+                                        <div class="rating-stars">
+                                            <div class="star-rating" data-stage="writing">
+                                                <span class="star" data-value="1">★</span>
+                                                <span class="star" data-value="2">★</span>
+                                                <span class="star" data-value="3">★</span>
+                                                <span class="star" data-value="4">★</span>
+                                                <span class="star" data-value="5">★</span>
+                                            </div>
+                                            <span class="rating-text" id="writingRatingText">未评分</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-12">
+                                <!-- 爆点评分 -->
+                                <div class="stage-rating">
+                                    <h6><i class="fas fa-fire text-danger me-2"></i>爆点评分</h6>
+                                    <div class="rating-item">
+                                        <div class="rating-stars">
+                                            <div class="star-rating" data-stage="highlight">
+                                                <span class="star" data-value="1">★</span>
+                                                <span class="star" data-value="2">★</span>
+                                                <span class="star" data-value="3">★</span>
+                                                <span class="star" data-value="4">★</span>
+                                                <span class="star" data-value="5">★</span>
+                                            </div>
+                                            <span class="rating-text" id="highlightRatingText">未评分</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 总体评分和操作 -->
+                <div class="overall-summary mt-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <!-- 总体评分 -->
+                                    <div class="overall-rating">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6><i class="fas fa-trophy text-warning me-2"></i>总体评分</h6>
+                                                <div class="text-muted small">平均分数</div>
+                                            </div>
+                                            <div class="overall-score">
+                                                <span class="score-number" id="overallScore">0.0</span>
+                                                <span class="score-max">/100</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- 评分操作 -->
+                                    <div class="rating-actions">
+                                        <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="getAIRating()">
+                                            <i class="fas fa-robot me-1"></i> AI智能评分
+                                        </button>
+                                        <button class="btn btn-outline-success btn-sm w-100" onclick="saveRatings()">
+                                            <i class="fas fa-save me-1"></i> 保存评分
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-4 col-lg-5 col-md-4">
+                <!-- AI助手面板 -->
+                <div class="ai-assistant">
+                    <div class="ai-header">
+                        <h6><i class="fas fa-robot text-primary"></i> AI写作助手</h6>
+                        <small class="text-muted">智能分析与建议</small>
+                    </div>
+                    
+                    <div class="ai-content">
+                        <div class="ai-actions mb-3">
+                            <button class="btn btn-primary btn-sm w-100 mb-2" onclick="getAIAnalysis()">
+                                <i class="fas fa-search me-1"></i> 分析当前内容
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="getAISuggestions()">
+                                <i class="fas fa-lightbulb me-1"></i> 获取写作建议
+                            </button>
+                        </div>
+                        
+                        <div class="ai-feedback" id="aiFeedback">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-robot fa-2x mb-2 text-primary"></i>
+                                <p class="mb-0">点击上方按钮获取AI建议</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载模态框 -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">处理中...</span>
+                </div>
+                <p class="mb-0" id="loadingText">AI正在分析您的内容...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.writing-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.project-header {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.topic-display {
+    margin-top: 15px;
+}
+
+.topic-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #007bff;
+}
+
+.topic-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.topic-text {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+    color: #333;
+}
+
+.writing-stages {
+    margin-bottom: 20px;
+}
+
+.stage-nav {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+}
+
+.stage-btn {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px 25px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    min-width: 120px;
+}
+
+.stage-btn:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+}
+
+.stage-btn.active {
+    border-color: #007bff;
+    background: #007bff;
+    color: white;
+}
+
+.stage-btn i {
+    display: block;
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.writing-content {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.stage-content {
+    display: none;
+}
+
+.stage-content.active {
+    display: block;
+}
+
+.stage-header {
+    margin-bottom: 20px;
+}
+
+/* 文本输入区域容器 */
+.textarea-container {
+    position: relative;
+    margin-top: 15px;
+}
+
+.stage-textarea {
+    min-height: 600px;
+    max-height: 90vh;
+    height: 600px;
+    resize: vertical;
+    font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 25px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    width: 100%;
+}
+
+.stage-textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 4px 16px rgba(0,123,255,0.15);
+    outline: none;
+}
+
+.textarea-footer {
+    margin-top: 8px;
+    padding: 0 5px;
+}
+
+/* 阶段头部样式 */
+.stage-header {
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 0;
+    border: 1px solid #e9ecef;
+}
+
+.stage-actions .btn {
+    font-size: 0.875rem;
+    padding: 6px 12px;
+}
+
+.ai-assistant {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    position: sticky;
+    top: 20px;
+    height: calc(260vh - 150px);
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-header {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.ai-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-feedback {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    height: calc(260vh - 300px);
+    min-height: 1000px;
+}
+
+.writing-stats {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+}
+
+/* 写作统计样式 */
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #007bff;
+    color: white;
+    border-radius: 8px;
+    margin-right: 12px;
+    font-size: 1.1rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* 评分系统样式 */
+.rating-system {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.rating-header {
+    margin-bottom: 15px;
+}
+
+.rating-header h6 {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.rating-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #ffc107;
+}
+
+.rating-label {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.rating-stars {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.star-rating {
+    display: flex;
+    gap: 2px;
+}
+
+.star {
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.star:hover,
+.star.active {
+    color: #ffc107;
+}
+
+.star.active {
+    color: #ff9800;
+}
+
+.rating-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.overall-rating {
+    text-align: center;
+}
+
+.overall-score {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.score-number {
+    color: #28a745;
+}
+
+.score-max {
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.rating-actions {
+    margin-top: 15px;
+}
+
+.rating-actions .btn {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+}
+
+/* 反馈内容样式 */
+.feedback-section {
+    margin-bottom: 20px;
+}
+
+.feedback-section h6 {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.feedback-section ul {
+    margin-bottom: 0;
+}
+
+.feedback-section li {
+    padding: 5px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.feedback-section li:last-child {
+    border-bottom: none;
+}
+
+/* AI评分反馈样式 */
+.ai-scoring-feedback {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #007bff;
+}
+
+.ai-scoring-feedback .feedback-section {
+    background: white;
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.ai-scoring-feedback .feedback-content {
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.ai-scoring-feedback .badge {
+    font-size: 0.75rem;
+}
+
+.ai-scoring-feedback h6 {
+    color: #007bff;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 8px;
+}
+
+.stat-label {
+    font-weight: 500;
+}
+
+.progress {
+    width: 100px;
+    height: 8px;
+}
+
+.word-count {
+    font-size: 1.1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .writing-container {
+        padding: 15px;
+    }
+    
+    .stage-textarea {
+        min-height: 600px;
+        font-size: 15px;
+        padding: 20px;
+    }
+    
+    .ai-assistant {
+        position: relative;
+        top: auto;
+    }
+    
+    .stage-bottom-panel {
+        margin-top: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .writing-container {
+        padding: 10px;
+    }
+    
+    .stage-nav {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .stage-btn {
+        width: 100%;
+        max-width: 200px;
+        padding: 12px 20px;
+    }
+    
+    .stage-btn i {
+        font-size: 1.2rem;
+    }
+    
+    .stage-header {
+        padding: 15px;
+    }
+    
+    .stage-header .d-flex {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stage-actions {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .stage-actions .btn {
+        flex: 1;
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
+    
+    .stage-textarea {
+        min-height: 500px;
+        font-size: 14px;
+        padding: 15px;
+    }
+    
+    .stats-grid {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .stat-item {
+        flex: 1;
+        min-width: 120px;
+        padding: 8px;
+    }
+    
+    .stat-icon {
+        width: 30px;
+        height: 30px;
+        margin-right: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .project-header {
+        padding: 15px;
+    }
+    
+    .project-header .d-flex {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .stage-textarea {
+        min-height: 400px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    
+    .stats-grid {
+        flex-direction: column;
+    }
+    
+    .stat-item {
+        min-width: auto;
+    }
+}
+
+/* 阶段底部面板样式 */
+.stage-bottom-panel {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    margin-top: 20px;
+}
+
+.stage-rating {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    height: 100%;
+}
+
+.writing-stats {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    height: 100%;
+}
+
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 1.1rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 评分星星样式 */
+.rating-stars {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.star-rating {
+    display: flex;
+    gap: 5px;
+}
+
+.star {
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.star:hover,
+.star.active {
+    color: #ffc107;
+}
+
+.rating-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-left: 10px;
+}
+
+/* 总体摘要样式 */
+.overall-summary .card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+
+.overall-rating {
+    text-align: center;
+}
+
+.overall-score {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.score-number {
+    color: #28a745;
+}
+
+.score-max {
+    color: #6c757d;
+    font-size: 1.2rem;
+}
+
+.rating-actions .btn {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+}
+
+/* 示范语句样式 */
+.example-sentences {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.example-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.example-item:hover {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.example-text {
+    font-style: italic;
+    color: #495057;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.example-item .btn {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.example-item .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 简化的Utils对象
+window.Utils = {
+    showAlert: function(message, type) {
+        // 尝试使用全局alert元素
+        const alertElement = document.getElementById('globalAlert');
+        if (alertElement) {
+            const alertMessage = document.getElementById('alertMessage');
+            const alertIcon = document.getElementById('alertIcon');
+            if (alertMessage && alertIcon) {
+                alertMessage.textContent = message;
+                alertIcon.className = 'fas fa-info-circle me-2';
+                alertElement.className = 'alert alert-' + (type === 'error' ? 'danger' : type) + ' alert-dismissible fade show';
+                alertElement.style.display = 'block';
+                setTimeout(() => {
+                    alertElement.style.display = 'none';
+                }, 5000);
+                return;
+            }
+        }
+        // 备用方案：使用浏览器alert
+        alert(message);
+    }
+};
+
+const projectId = {{ project.id }};
+let currentStage = 'brainstorm';
+let autoSaveTimer = null;
+
+// 阶段切换
+document.querySelectorAll('.stage-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const stage = this.dataset.stage;
+        switchStage(stage);
+    });
+});
+
+function switchStage(stage) {
+    // 更新按钮状态
+    document.querySelectorAll('.stage-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-stage="${stage}"]`).classList.add('active');
+    
+    // 更新内容区域
+    document.querySelectorAll('.stage-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${stage}-stage`).classList.add('active');
+    
+    currentStage = stage;
+    updateWordCount();
+}
+
+// 字数统计
+function updateWordCount() {
+    const textarea = document.getElementById(currentStage + 'Content');
+    const content = textarea.value;
+    const wordCount = content.replace(/\s/g, '').length;
+    
+    document.getElementById('currentWordCount').textContent = wordCount;
+    document.getElementById('wordCount').textContent = wordCount;
+    
+    // 更新进度条
+    const progress = Math.min((wordCount / 1000) * 100, 100);
+    document.getElementById('progressBar').style.width = progress + '%';
+}
+
+// 绑定文本框事件
+document.querySelectorAll('.stage-textarea').forEach(textarea => {
+    textarea.addEventListener('input', function() {
+        updateWordCount();
+        
+        // 自动保存
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(saveProject, 5000);
+    });
+});
+
+// 保存项目
+async function saveProject(showSuccessAlert = false) {
+    try {
+        const data = {
+            brainstorm_content: document.getElementById('brainstormContent').value,
+            outline_content: document.getElementById('outlineContent').value,
+            writing_content: document.getElementById('writingContent').value,
+            status: 'writing'
+        };
+        
+        const response = await fetch(`/api/projects/${projectId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (showSuccessAlert) {
+                Utils.showAlert('保存成功', 'success');
+            } else {
+                // 静默保存，只在控制台记录
+                console.log('项目已自动保存');
+            }
+        } else {
+            Utils.showAlert('保存失败：' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('保存错误:', error);
+        if (showSuccessAlert) {
+            Utils.showAlert('保存失败，请检查网络连接', 'error');
+        }
+    }
+}
+
+// AI分析
+async function getAIAnalysis() {
+    const textarea = document.getElementById(currentStage + 'Content');
+    const content = textarea.value.trim();
+    
+    if (!content) {
+        Utils.showAlert('请先输入内容', 'warning');
+        return;
+    }
+    
+    // 获取AI设置
+    const userSettings = Utils.getUserSettings();
+    if (!userSettings.aiProvider || !userSettings.aiModel) {
+        Utils.showAlert('请先配置AI设置', 'warning');
+        return;
+    }
+    
+    // 构建AI设置对象
+    const parsedSettings = {
+        provider: userSettings.aiProvider,
+        model: userSettings.aiModel,
+        base_url: userSettings.aiBaseUrl,
+        api_key: localStorage.getItem('aiApiKey') || ''
+    };
+    
+    showLoading('AI正在分析您的内容...');
+    
+    try {
+        const response = await fetch('/api/ai/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                stage: currentStage,
+                content: content,
+                ai_provider: parsedSettings.provider,
+                ai_model: parsedSettings.model,
+                ai_base_url: parsedSettings.base_url,
+                ai_api_key: parsedSettings.api_key
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayAIFeedback(result.data);
+        } else {
+            Utils.showAlert('分析失败：' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('AI分析错误:', error);
+        Utils.showAlert('分析失败，请检查网络连接', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// AI建议
+async function getAISuggestions() {
+    const textarea = document.getElementById(currentStage + 'Content');
+    const content = textarea.value.trim();
+    
+    // 获取AI设置
+    const userSettings = Utils.getUserSettings();
+    if (!userSettings.aiProvider || !userSettings.aiModel) {
+        Utils.showAlert('请先配置AI设置', 'warning');
+        return;
+    }
+    
+    // 构建AI设置对象
+    const parsedSettings = {
+        provider: userSettings.aiProvider,
+        model: userSettings.aiModel,
+        base_url: userSettings.aiBaseUrl,
+        api_key: localStorage.getItem('aiApiKey') || ''
+    };
+    
+    showLoading('AI正在生成建议...');
+    
+    try {
+        const topicElement = document.querySelector('.topic-text');
+        const topic = topicElement ? topicElement.textContent : '';
+        
+        // 获取项目信息以获取年级和学科
+        const projectResponse = await fetch(`/api/projects/${projectId}`);
+        let grade = '初中';
+        let subject = '语文';
+        let language = '中文';
+        
+        if (projectResponse.ok) {
+            const projectData = await projectResponse.json();
+            if (projectData.success && projectData.data) {
+                grade = projectData.data.grade || '初中';
+                subject = projectData.data.subject || '语文';
+                // 根据学科判断语种
+                language = subject.includes('英语') ? '英语' : '中文';
+            }
+        }
+        
+        // 获取当前阶段的中文描述
+        const stageMap = {
+            'brainstorm': '构思',
+            'outline': '提纲',
+            'writing': '正文'
+        };
+        const currentStageText = stageMap[currentStage] || currentStage;
+        
+        // 获取所有文本框的完整内容
+        const brainstormContent = document.getElementById('brainstormContent').value.trim();
+        const outlineContent = document.getElementById('outlineContent').value.trim();
+        const writingContent = document.getElementById('writingContent').value.trim();
+        
+        const response = await fetch('/api/ai/suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                stage: currentStage,
+                current_stage_text: currentStageText,
+                content: content,
+                full_content: {
+                    brainstorm: brainstormContent,
+                    outline: outlineContent,
+                    writing: writingContent
+                },
+                topic: topic,
+                grade: grade,
+                subject: subject,
+                language: language,
+                ai_provider: parsedSettings.provider,
+                ai_model: parsedSettings.model,
+                ai_base_url: parsedSettings.base_url,
+                ai_api_key: parsedSettings.api_key
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('AI建议响应数据:', result.data);
+            if (result.data.continuation_sets) {
+                console.log('续写建议数据:', result.data.continuation_sets);
+            }
+            displayAISuggestions(result.data);
+        } else {
+            Utils.showAlert('获取建议失败：' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('AI建议错误:', error);
+        Utils.showAlert('获取建议失败，请检查网络连接', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 显示AI建议
+function displayAISuggestions(suggestions) {
+    const feedbackDiv = document.getElementById('aiFeedback');
+    
+    let html = '<div class="ai-suggestions">';
+    
+    // 当前状态点评
+    if (suggestions.current_status_critique) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-info"><i class="fas fa-search"></i> 当前状态点评</h6>';
+        html += `<div class="alert alert-info">${suggestions.current_status_critique}</div>`;
+        html += '</div>';
+    }
+    
+    // 阶段特定建议
+    if (suggestions.stage_tips && suggestions.stage_tips.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += `<h6 class="text-primary"><i class="fas fa-lightbulb"></i> ${getStageTitle(currentStage)}建议</h6>`;
+        html += '<ul class="list-unstyled">';
+        suggestions.stage_tips.forEach(tip => {
+            html += `<li class="mb-2"><i class="fas fa-arrow-right text-primary me-2"></i>${tip}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    // 续写建议（3套，每套2句话）
+    if (suggestions.continuation_sets && suggestions.continuation_sets.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-success"><i class="fas fa-pen-fancy"></i> 续写建议</h6>';
+        html += '<div class="continuation-sets">';
+        suggestions.continuation_sets.forEach((set, index) => {
+            html += `<div class="continuation-set mb-3 p-3 border rounded">`;
+            html += `<div class="fw-bold mb-2">续写方案 ${index + 1}：</div>`;
+            if (set.sentences && set.sentences.length >= 2) {
+                html += '<div class="continuation-sentences">';
+                set.sentences.slice(0, 2).forEach((sentence, sentIndex) => {
+                    html += `<div class="sentence-item mb-2">`;
+                    html += `<span class="sentence-number badge bg-primary me-2">${sentIndex + 1}</span>`;
+                    html += `<span class="sentence-text">${sentence}</span>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+                const combinedText = set.sentences.slice(0, 2).join(' ');
+                html += `<button class="btn btn-sm btn-outline-success mt-2" onclick="insertContinuation('${combinedText.replace(/'/g, "\\'")}')"`;
+                html += `><i class="fas fa-plus me-1"></i>插入这套续写</button>`;
+            }
+            html += '</div>';
+        });
+        html += '</div></div>';
+    }
+    
+    // 示范语句
+    if (suggestions.example_sentences && suggestions.example_sentences.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-danger"><i class="fas fa-quote-left"></i> 示范语句</h6>';
+        html += '<div class="example-sentences">';
+        suggestions.example_sentences.forEach((sentence, index) => {
+            html += `<div class="example-item mb-2">
+                <div class="example-text">${sentence}</div>
+                <button class="btn btn-sm btn-outline-primary mt-1" onclick="insertExample('${sentence.replace(/'/g, "\\'")}')">
+                    <i class="fas fa-plus me-1"></i>插入
+                </button>
+            </div>`;
+        });
+        html += '</div></div>';
+    }
+    
+    // 内容建议
+    if (suggestions.content_suggestions && suggestions.content_suggestions.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-success"><i class="fas fa-pen"></i> 内容建议</h6>';
+        html += '<ul class="list-unstyled">';
+        suggestions.content_suggestions.forEach(suggestion => {
+            html += `<li class="mb-2"><i class="fas fa-plus text-success me-2"></i>${suggestion}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    // 写作技巧
+    if (suggestions.writing_tips && suggestions.writing_tips.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-info"><i class="fas fa-magic"></i> 写作技巧</h6>';
+        html += '<ul class="list-unstyled">';
+        suggestions.writing_tips.forEach(tip => {
+            html += `<li class="mb-2"><i class="fas fa-star text-info me-2"></i>${tip}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    // 参考素材
+    if (suggestions.references && suggestions.references.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-secondary"><i class="fas fa-book"></i> 参考素材</h6>';
+        html += '<ul class="list-unstyled">';
+        suggestions.references.forEach(ref => {
+            html += `<li class="mb-2"><i class="fas fa-bookmark text-secondary me-2"></i>${ref}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    // 下一步建议
+    if (suggestions.next_steps && suggestions.next_steps.length > 0) {
+        html += '<div class="feedback-section">';
+        html += '<h6 class="text-warning"><i class="fas fa-arrow-right"></i> 下一步</h6>';
+        html += '<ul class="list-unstyled">';
+        suggestions.next_steps.forEach(step => {
+            html += `<li class="mb-2"><i class="fas fa-chevron-right text-warning me-2"></i>${step}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    html += '</div>';
+    
+    feedbackDiv.innerHTML = html;
+}
+
+// 插入示范语句到当前文本框
+function insertExample(sentence) {
+    const textarea = document.getElementById(currentStage + 'Content');
+    const cursorPos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const textAfter = textarea.value.substring(cursorPos);
+    
+    // 在光标位置插入示范语句
+    const newText = textBefore + sentence + textAfter;
+    textarea.value = newText;
+    
+    // 设置光标位置到插入文本的末尾
+    const newCursorPos = cursorPos + sentence.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    
+    // 聚焦到文本框
+    textarea.focus();
+    
+    // 更新字数统计
+    updateWordCountForStage(currentStage);
+    
+    // 显示简短提示
+    Utils.showAlert('已插入示范语句', 'info', 2000);
+    
+    // 自动保存（静默）
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => saveProject(false), 2000);
+}
+
+// 获取阶段标题
+function getStageTitle(stage) {
+    switch(stage) {
+        case 'brainstorm': return '构思';
+        case 'outline': return '提纲';
+        case 'writing': return '正文';
+        default: return '写作';
+    }
+}
+
+// 显示AI反馈
+function displayAIFeedback(feedback) {
+    const feedbackDiv = document.getElementById('aiFeedback');
+    
+    let html = '<div class="ai-analysis">';
+    
+    if (feedback.strengths && feedback.strengths.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-success"><i class="fas fa-thumbs-up"></i> 优点</h6>';
+        html += '<ul class="list-unstyled">';
+        feedback.strengths.forEach(strength => {
+            html += `<li class="mb-1"><i class="fas fa-check text-success me-2"></i>${strength}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    if (feedback.issues && feedback.issues.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-warning"><i class="fas fa-exclamation-triangle"></i> 需要改进</h6>';
+        html += '<ul class="list-unstyled">';
+        feedback.issues.forEach(issue => {
+            html += `<li class="mb-1"><i class="fas fa-minus text-warning me-2"></i>${issue}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    if (feedback.suggestions && feedback.suggestions.length > 0) {
+        html += '<div class="feedback-section mb-3">';
+        html += '<h6 class="text-primary"><i class="fas fa-lightbulb"></i> 建议</h6>';
+        html += '<ul class="list-unstyled">';
+        feedback.suggestions.forEach(suggestion => {
+            html += `<li class="mb-1"><i class="fas fa-arrow-right text-primary me-2"></i>${suggestion}</li>`;
+        });
+        html += '</ul></div>';
+    }
+    
+    if (feedback.analysis) {
+        html += '<div class="feedback-section">';
+        html += '<h6><i class="fas fa-comment"></i> 分析</h6>';
+        html += `<p class="mb-0">${feedback.analysis}</p>`;
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    
+    feedbackDiv.innerHTML = html;
+}
+
+// 完成评分
+async function evaluateProject() {
+    const writingContent = document.getElementById('writingContent').value.trim();
+    
+    if (!writingContent) {
+        Utils.showAlert('请先完成正文写作', 'warning');
+        return;
+    }
+    
+    // 获取AI设置
+    const userSettings = Utils.getUserSettings();
+    if (!userSettings.aiProvider || !userSettings.aiModel) {
+        Utils.showAlert('请先配置AI设置', 'warning');
+        return;
+    }
+    
+    // 构建AI设置对象
+    const parsedSettings = {
+        provider: userSettings.aiProvider,
+        model: userSettings.aiModel,
+        base_url: userSettings.aiBaseUrl,
+        api_key: localStorage.getItem('aiApiKey') || ''
+    };
+    
+    if (confirm('确定要完成写作并进行评分吗？')) {
+        showLoading('AI正在评分中...');
+        
+        try {
+            const response = await fetch('/api/ai/evaluate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: projectId,
+                    ai_provider: parsedSettings.provider,
+                    ai_model: parsedSettings.model,
+                    ai_base_url: parsedSettings.base_url,
+                    ai_api_key: parsedSettings.api_key
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Utils.showAlert('评分完成！', 'success');
+                setTimeout(() => {
+                    window.location.href = `/review/${projectId}`;
+                }, 1500);
+            } else {
+                Utils.showAlert('评分失败：' + result.message, 'error');
+            }
+        } catch (error) {
+            Utils.showAlert('评分失败：' + error.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+}
+
+// 显示加载状态
+function showLoading(text) {
+    document.getElementById('loadingText').textContent = text;
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    modal.show();
+}
+
+// 隐藏加载状态
+function hideLoading() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+// 评分系统相关功能
+let stageRatings = {
+    brainstorm: 0,
+    outline: 0,
+    writing: 0,
+    highlight: 0
+};
+
+// 初始化评分系统
+function initRatingSystem() {
+    // 为每个星星添加点击事件
+    document.querySelectorAll('.star-rating').forEach(ratingContainer => {
+        const stage = ratingContainer.dataset.stage;
+        const stars = ratingContainer.querySelectorAll('.star');
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('click', function() {
+                const rating = index + 1;
+                setStageRating(stage, rating);
+            });
+            
+            star.addEventListener('mouseenter', function() {
+                highlightStars(ratingContainer, index + 1);
+            });
+        });
+        
+        ratingContainer.addEventListener('mouseleave', function() {
+            const currentRating = stageRatings[stage];
+            highlightStars(ratingContainer, currentRating);
+        });
+    });
+    
+    // 加载已保存的评分
+    loadSavedRatings();
+}
+
+// 设置阶段评分
+function setStageRating(stage, rating) {
+    console.log(`[DEBUG] setStageRating called: stage=${stage}, rating=${rating}`);
+    
+    // 确保评分在有效范围内（0-5）
+    rating = Math.max(0, Math.min(5, Math.round(rating)));
+    stageRatings[stage] = rating;
+    
+    console.log(`[DEBUG] Updated stageRatings:`, stageRatings);
+    
+    const ratingContainer = document.querySelector(`.star-rating[data-stage="${stage}"]`);
+    console.log(`[DEBUG] Found rating container for ${stage}:`, ratingContainer);
+    
+    if (ratingContainer) {
+        highlightStars(ratingContainer, rating);
+    }
+    
+    // 更新评分文本
+    const ratingText = document.getElementById(`${stage}RatingText`);
+    if (ratingText) {
+        const ratingLabels = ['很差', '很差', '较差', '一般', '良好', '优秀'];
+        // 0分也是已评分状态，显示为"很差"
+        ratingText.textContent = ratingLabels[rating] || '很差';
+        console.log(`[DEBUG] Updated rating text for ${stage}: ${ratingText.textContent}`);
+    }
+    
+    // 更新总体评分
+    updateOverallRating();
+    
+    // 不在这里自动保存，避免频繁调用
+    // saveRatings();
+}
+
+// 高亮星星
+function highlightStars(container, count) {
+    console.log(`[DEBUG] highlightStars called: count=${count}`);
+    
+    const stars = container.querySelectorAll('.star');
+    console.log(`[DEBUG] Found ${stars.length} stars in container`);
+    
+    stars.forEach((star, index) => {
+        if (index < count) {
+            star.classList.add('active');
+            console.log(`[DEBUG] Added 'active' class to star ${index + 1}`);
+        } else {
+            star.classList.remove('active');
+            console.log(`[DEBUG] Removed 'active' class from star ${index + 1}`);
+        }
+    });
+    
+    // 验证最终状态
+    const activeStars = container.querySelectorAll('.star.active');
+    console.log(`[DEBUG] Final active stars count: ${activeStars.length}`);
+    
+    // 检查每个星星的样式
+    stars.forEach((star, index) => {
+        const hasActive = star.classList.contains('active');
+        const computedStyle = window.getComputedStyle(star);
+        console.log(`[DEBUG] Star ${index + 1}: hasActive=${hasActive}, color=${computedStyle.color}`);
+    });
+}
+
+// 更新总体评分
+function updateOverallRating() {
+    console.log('[DEBUG] updateOverallRating called');
+    console.log('[DEBUG] Current stageRatings:', stageRatings);
+    
+    // 新的权重配置：构思10%，提纲0%，正文60%，爆点30%
+    const weights = {
+        brainstorm: 0.10,  // 构思 10%
+        outline: 0.00,     // 提纲 0%
+        writing: 0.60,     // 正文 60%
+        highlight: 0.30    // 爆点 30%
+    };
+    
+    let totalWeightedScore = 0;
+    let totalWeight = 0;
+    
+    // 计算加权总分
+    Object.keys(stageRatings).forEach(stage => {
+        const rating = stageRatings[stage];
+        const weight = weights[stage] || 0;
+        
+        if (rating !== undefined && rating !== null) {
+            // 将5星评分转换为100分制，然后乘以权重
+            const stageScore = (rating / 5) * 100;
+            totalWeightedScore += stageScore * weight;
+            totalWeight += weight;
+            console.log(`[DEBUG] ${stage}: ${rating}星 -> ${stageScore}分 × ${weight} = ${stageScore * weight}`);
+        }
+    });
+    
+    console.log('[DEBUG] Total weighted score:', totalWeightedScore);
+    console.log('[DEBUG] Total weight:', totalWeight);
+    
+    // 如果没有任何评分，显示0分
+    if (totalWeight === 0) {
+        console.log('[DEBUG] No valid ratings, setting score to 0');
+        document.getElementById('overallScore').textContent = '0';
+        return;
+    }
+    
+    // 计算最终分数（已经是加权平均）
+    const finalScore = Math.max(0, Math.min(100, Math.floor(totalWeightedScore)));
+    console.log('[DEBUG] Final calculated score:', finalScore);
+    
+    document.getElementById('overallScore').textContent = finalScore;
+    console.log('[DEBUG] Updated overall score display to:', finalScore);
+}
+
+// AI智能评分
+async function getAIRating() {
+    const brainstormContent = document.getElementById('brainstormContent').value.trim();
+    const outlineContent = document.getElementById('outlineContent').value.trim();
+    const writingContent = document.getElementById('writingContent').value.trim();
+    
+    // 获取AI设置
+    const userSettings = Utils.getUserSettings();
+    if (!userSettings.aiProvider || !userSettings.aiModel) {
+        Utils.showAlert('请先配置AI设置', 'warning');
+        return;
+    }
+    
+    // 构建AI设置对象
+    const parsedSettings = {
+        provider: userSettings.aiProvider,
+        model: userSettings.aiModel,
+        base_url: userSettings.aiBaseUrl,
+        api_key: localStorage.getItem('aiApiKey') || ''
+    };
+    
+    showLoading('AI正在智能评分...');
+    
+    console.log('=== 开始AI评分 ===');
+    console.log('构思内容长度:', brainstormContent.length);
+    console.log('提纲内容长度:', outlineContent.length);
+    console.log('正文内容长度:', writingContent.length);
+    
+    try {
+        // 使用新的评分API
+        const response = await fetch('/api/ai/score_article', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                article_data: {
+                    brainstorm: brainstormContent,
+                    outline: outlineContent,
+                    writing: writingContent,
+                    highlight: brainstormContent + '\n' + outlineContent + '\n' + writingContent  // 爆点基于全文内容评估
+                },
+                ai_provider: parsedSettings.provider,
+                ai_model: parsedSettings.model,
+                ai_api_key: parsedSettings.api_key,
+                ai_base_url: parsedSettings.base_url
+            })
+        });
+        
+        console.log('AI评分响应状态:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('AI评分结果:', result);
+        
+        if (result.success && result.data && result.data.scores) {
+            const scores = result.data.scores;
+            const stageReasons = result.data.stage_reasons || {};
+            console.log('AI返回的分数:', scores);
+            console.log('AI返回的评价:', stageReasons);
+            
+            // 将100分制转换为0-5星级评分
+            if (scores.brainstorm !== undefined) {
+                const brainstormRating = Math.max(0, Math.min(5, Math.round((scores.brainstorm / 100) * 5)));
+                console.log('构思内容有内容，AI评分:', brainstormRating);
+                setStageRating('brainstorm', brainstormRating);
+            }
+            if (scores.outline !== undefined) {
+                const outlineRating = Math.max(0, Math.min(5, Math.round((scores.outline / 100) * 5)));
+                console.log('提纲内容有内容，AI评分:', outlineRating);
+                setStageRating('outline', outlineRating);
+            }
+            if (scores.writing !== undefined) {
+                const writingRating = Math.max(0, Math.min(5, Math.round((scores.writing / 100) * 5)));
+                console.log('正文内容有内容，AI评分:', writingRating);
+                setStageRating('writing', writingRating);
+            }
+            if (scores.highlight !== undefined) {
+                const highlightRating = Math.max(0, Math.min(5, Math.round((scores.highlight / 100) * 5)));
+                console.log('爆点内容评分:', highlightRating);
+                setStageRating('highlight', highlightRating);
+            }
+            
+            // 显示正文和爆点的评价在右侧AI建议区域
+            displayScoringFeedback(scores, stageReasons);
+            
+            // 自动保存评分
+            await saveRatings();
+            Utils.showAlert('AI评分完成并已自动保存！', 'success');
+        } else {
+            // 评分失败时给出基础评分，根据内容长度给分
+            setStageRating('brainstorm', brainstormContent.length > 0 ? 1 : 0);
+            setStageRating('outline', outlineContent.length > 0 ? 1 : 0);
+            setStageRating('writing', writingContent.length > 0 ? 1 : 0);
+            setStageRating('highlight', (brainstormContent + outlineContent + writingContent).length > 0 ? 1 : 0);
+            
+            // 自动保存评分
+            await saveRatings();
+            Utils.showAlert('AI评分失败，已给出基础评分并保存', 'warning');
+        }
+    } catch (error) {
+        console.error('AI评分错误:', error);
+        
+        // 即使出现异常也给出基础评分，空内容给0分，有内容给1分
+        setStageRating('brainstorm', brainstormContent.length > 0 ? 1 : 0);
+        setStageRating('outline', outlineContent.length > 0 ? 1 : 0);
+        setStageRating('writing', writingContent.length > 0 ? 1 : 0);
+        setStageRating('highlight', (brainstormContent + outlineContent + writingContent).length > 0 ? 1 : 0);
+        
+        // 自动保存评分
+        try {
+            await saveRatings();
+            Utils.showAlert('AI评分异常，已给出最低评分并保存', 'warning');
+        } catch (saveError) {
+            Utils.showAlert('AI评分失败，保存评分也失败：' + error.message, 'error');
+        }
+    } finally {
+        hideLoading();
+    }
+}
+
+// 显示评分反馈
+function displayScoringFeedback(scores, stageReasons) {
+    const aiFeedbackDiv = document.getElementById('aiFeedback');
+    if (!aiFeedbackDiv) return;
+    
+    let feedbackHtml = '<div class="ai-scoring-feedback">';
+    feedbackHtml += '<h6 class="text-primary mb-3"><i class="fas fa-chart-line me-2"></i>AI评分详情</h6>';
+    
+    // 显示正文评价
+    if (scores.writing !== undefined && stageReasons.writing) {
+        feedbackHtml += '<div class="feedback-section mb-3">';
+        feedbackHtml += '<div class="d-flex align-items-center mb-2">';
+        feedbackHtml += '<span class="badge bg-primary me-2">正文</span>';
+        feedbackHtml += `<span class="fw-bold">${scores.writing}分</span>`;
+        feedbackHtml += '</div>';
+        feedbackHtml += `<div class="feedback-content text-muted small">${stageReasons.writing}</div>`;
+        feedbackHtml += '</div>';
+    }
+    
+    // 显示爆点评价
+    if (scores.highlight !== undefined && stageReasons.highlight) {
+        feedbackHtml += '<div class="feedback-section mb-3">';
+        feedbackHtml += '<div class="d-flex align-items-center mb-2">';
+        feedbackHtml += '<span class="badge bg-warning me-2">爆点</span>';
+        feedbackHtml += `<span class="fw-bold">${scores.highlight}分</span>`;
+        feedbackHtml += '</div>';
+        feedbackHtml += `<div class="feedback-content text-muted small">${stageReasons.highlight}</div>`;
+        feedbackHtml += '</div>';
+    }
+    
+    // 如果有总分，显示总分
+    if (scores.writing !== undefined || scores.highlight !== undefined) {
+        // 从DOM中获取当前显示的总分
+        const overallScoreElement = document.getElementById('overallScore');
+        const totalScore = overallScoreElement ? overallScoreElement.textContent : '0';
+        feedbackHtml += '<div class="feedback-section border-top pt-2">';
+        feedbackHtml += '<div class="d-flex align-items-center justify-content-between">';
+        feedbackHtml += '<span class="fw-bold">总分：</span>';
+        feedbackHtml += `<span class="fw-bold text-primary">${totalScore}分</span>`;
+        feedbackHtml += '</div>';
+        feedbackHtml += '</div>';
+    }
+    
+    feedbackHtml += '</div>';
+    
+    aiFeedbackDiv.innerHTML = feedbackHtml;
+}
+
+// 保存评分
+async function saveRatings() {
+    try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                stage_ratings: stageRatings
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('评分已自动保存');
+        }
+    } catch (error) {
+        console.error('保存评分失败:', error);
+    }
+}
+
+// 加载已保存的评分
+async function loadSavedRatings() {
+    console.log(`[DEBUG] loadSavedRatings called for project ${projectId}`);
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}`);
+        console.log(`[DEBUG] API response status: ${response.status}`);
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log(`[DEBUG] API result:`, result);
+            
+            if (result.success && result.data) {
+                const project = result.data;
+                console.log(`[DEBUG] Project data:`, project);
+                console.log(`[DEBUG] Project scores field:`, project.scores);
+                console.log(`[DEBUG] Project final_score:`, project.final_score);
+                
+                // 从项目的scores字段中解析评分
+                let savedRatings = {
+                    brainstorm: 0,
+                    outline: 0, 
+                    writing: 0,
+                    highlight: 0
+                };
+                
+                if (project.scores) {
+                    try {
+                        const scores = typeof project.scores === 'string' ? JSON.parse(project.scores) : project.scores;
+                        console.log(`[DEBUG] Parsed scores:`, scores);
+                        
+                        savedRatings = {
+                            brainstorm: scores.brainstorm || 0,
+                            outline: scores.outline || 0,
+                            writing: scores.writing || 0,
+                            highlight: scores.highlight || 0
+                        };
+                        console.log(`[DEBUG] Mapped savedRatings:`, savedRatings);
+                    } catch (e) {
+                        console.warn('解析评分数据失败:', e);
+                    }
+                }
+                
+                // 更新全局评分对象
+                stageRatings = savedRatings;
+                console.log(`[DEBUG] Updated global stageRatings:`, stageRatings);
+                
+                // 设置评分并更新显示
+                Object.keys(savedRatings).forEach(stage => {
+                    console.log(`[DEBUG] Setting rating for stage ${stage}: ${savedRatings[stage]}`);
+                    setStageRating(stage, savedRatings[stage]);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('加载评分失败:', error);
+    }
+}
+
+// 更新字数统计函数 - 支持多个阶段
+function updateWordCountForStage(stage) {
+    const textarea = document.getElementById(stage + 'Content');
+    const content = textarea.value;
+    const wordCount = content.replace(/\s/g, '').length;
+    
+    // 更新对应阶段的字数统计
+    const stageIndex = {'brainstorm': '', 'outline': '2', 'writing': '3'}[stage] || '';
+    const countElement = document.getElementById(`currentWordCount${stageIndex}`);
+    if (countElement) {
+        countElement.textContent = wordCount;
+    }
+    
+    // 更新顶部总字数
+    const totalWordCount = 
+        document.getElementById('brainstormContent').value.replace(/\s/g, '').length +
+        document.getElementById('outlineContent').value.replace(/\s/g, '').length +
+        document.getElementById('writingContent').value.replace(/\s/g, '').length;
+    
+    document.getElementById('wordCount').textContent = totalWordCount;
+    
+    // 更新对应阶段的进度条
+    const progressElement = document.getElementById(`progressBar${stageIndex}`);
+    if (progressElement) {
+        const progress = Math.min((wordCount / 1000) * 100, 100);
+        progressElement.style.width = progress + '%';
+    }
+}
+
+// 重写字数统计函数
+function updateWordCount() {
+    updateWordCountForStage(currentStage);
+}
+
+// 页面加载完成
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[DEBUG] DOMContentLoaded event fired');
+    console.log('[DEBUG] Initial stageRatings:', stageRatings);
+    console.log('[DEBUG] Project ID:', projectId);
+    
+    updateWordCount();
+    initRatingSystem();
+    
+    console.log('[DEBUG] About to call loadSavedRatings');
+    loadSavedRatings();
+    
+    // 确保星星显示正确
+    setTimeout(() => {
+        console.log('[DEBUG] Timeout callback - checking stageRatings:', stageRatings);
+        Object.keys(stageRatings).forEach(stage => {
+            console.log(`[DEBUG] Checking stage ${stage} with rating ${stageRatings[stage]}`);
+            if (stageRatings[stage] > 0) {
+                console.log(`[DEBUG] Re-setting rating for stage ${stage}`);
+                setStageRating(stage, stageRatings[stage]);
+            }
+        });
+    }, 100);
+    
+    // 为所有文本框绑定字数统计事件
+    ['brainstorm', 'outline', 'writing'].forEach(stage => {
+        const textarea = document.getElementById(stage + 'Content');
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                updateWordCountForStage(stage);
+                
+                // 自动保存（静默）
+                clearTimeout(autoSaveTimer);
+                autoSaveTimer = setTimeout(() => saveProject(false), 5000);
+            });
+        }
+    });
+    
+    // 定期自动保存（静默）
+    setInterval(() => saveProject(false), 60000); // 每分钟自动保存
+});
+
+// 页面离开前保存（静默）
+window.addEventListener('beforeunload', function() {
+    saveProject(false);
+});
+
+// 插入续写内容到当前文本框
+function insertContinuation(text) {
+    const textarea = document.getElementById(currentStage + 'Content');
+    const cursorPos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const textAfter = textarea.value.substring(cursorPos);
+    
+    // 在光标位置插入续写内容
+    const newText = textBefore + text + textAfter;
+    textarea.value = newText;
+    
+    // 设置光标位置到插入内容的末尾
+    const newCursorPos = cursorPos + text.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    textarea.focus();
+    
+    // 触发输入事件以更新字数统计
+    textarea.dispatchEvent(new Event('input'));
+    
+    Utils.showAlert('续写内容已插入', 'success');
+}
+</script>
+{% endblock %}

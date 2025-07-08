@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}创建项目 - AI智能写作辅导软件{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <div class="text-center mb-4">
+        <h2>创建写作项目</h2>
+        <p class="text-muted">设置您的写作项目，AI将为您提供个性化的写作辅助</p>
+    </div>
+    
+    <div class="setup-form">
+        <form id="setupForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="title" class="form-label">项目名称 *</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="给您的项目起个名字" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="subject" class="form-label">学科 *</label>
+                        <select class="form-select" id="subject" name="subject" required>
+                            <option value="语文">语文</option>
+                            <option value="英语">英语</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="article_type" class="form-label">文章类型 *</label>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="article_type" 
+                                   id="type1" value="议论文" checked>
+                            <label class="form-check-label" for="type1">议论文</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="article_type" 
+                                   id="type2" value="记叙文">
+                            <label class="form-check-label" for="type2">记叙文</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="article_type" 
+                                   id="type3" value="说明文">
+                            <label class="form-check-label" for="type3">说明文</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="article_type" 
+                                   id="type4" value="应用文">
+                            <label class="form-check-label" for="type4">应用文</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">题目设置 *</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="topic_mode" 
+                                   id="ai_topic" value="ai_generated" checked>
+                            <label class="form-check-label" for="ai_topic">AI生成题目</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="topic_mode" 
+                                   id="custom_topic" value="custom">
+                            <label class="form-check-label" for="custom_topic">自定义题目</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI生成题目区域 -->
+            <div id="aiTopicArea" class="topic-generation">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6>AI生成题目</h6>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="generateTopicBtn">
+                        <i class="fas fa-magic"></i> 生成题目
+                    </button>
+                </div>
+                
+                <div id="generatedTopicDisplay" class="generated-topic" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>生成的题目：</strong>
+                            <p id="generatedTopicText" class="mb-0 mt-2"></p>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="regenerateBtn">
+                            重新生成
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="topicLoadingArea" style="display: none;">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">生成中...</span>
+                        </div>
+                        <span class="ms-2">AI正在生成题目...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 自定义题目区域 -->
+            <div id="customTopicArea" class="form-group" style="display: none;">
+                <label for="custom_topic_text" class="form-label">自定义题目 *</label>
+                <textarea class="form-control" id="custom_topic_text" name="custom_topic" 
+                          rows="3" placeholder="请输入您的写作题目..."></textarea>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="button" class="btn btn-secondary me-3" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <button type="submit" class="btn btn-primary btn-lg" id="createProjectBtn">
+                    <i class="fas fa-rocket"></i> 开始写作
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+let generatedTopic = '';
+
+// 页面加载时自动填充项目名称
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title');
+    if (titleInput && !titleInput.value) {
+        const now = new Date();
+        const dateStr = now.getFullYear() + '年' + 
+                       (now.getMonth() + 1).toString().padStart(2, '0') + '月' + 
+                       now.getDate().toString().padStart(2, '0') + '日 ' +
+                       now.getHours().toString().padStart(2, '0') + ':' + 
+                       now.getMinutes().toString().padStart(2, '0');
+        titleInput.value = '写作项目 - ' + dateStr;
+    }
+});
+
+// 题目模式切换
+document.querySelectorAll('input[name="topic_mode"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const aiArea = document.getElementById('aiTopicArea');
+        const customArea = document.getElementById('customTopicArea');
+        
+        if (this.value === 'ai_generated') {
+            aiArea.style.display = 'block';
+            customArea.style.display = 'none';
+            document.getElementById('custom_topic_text').required = false;
+        } else {
+            aiArea.style.display = 'none';
+            customArea.style.display = 'block';
+            document.getElementById('custom_topic_text').required = true;
+        }
+    });
+});
+
+// 生成题目
+async function generateTopic() {
+    const subject = document.getElementById('subject').value;
+    const articleType = document.querySelector('input[name="article_type"]:checked').value;
+    
+    // 获取AI设置
+    const userSettings = Utils.getUserSettings();
+    if (!userSettings.aiProvider || !userSettings.aiModel) {
+        Utils.showAlert('AI生成题目需要先配置AI设置。建议切换到"自定义题目"模式，或前往首页配置AI设置。', 'warning', 5000);
+        // 自动切换到自定义题目模式
+        document.querySelector('input[name="topic_mode"][value="custom"]').checked = true;
+        document.getElementById('customTopicArea').style.display = 'block';
+        document.getElementById('aiTopicArea').style.display = 'none';
+        return;
+    }
+    
+    // 构建AI设置对象
+    const parsedSettings = {
+        provider: userSettings.aiProvider,
+        model: userSettings.aiModel,
+        base_url: userSettings.aiBaseUrl,
+        api_key: localStorage.getItem('aiApiKey') || ''
+    };
+    
+    // 获取当前用户信息以获取年级
+    try {
+        const userResponse = await Utils.apiRequest('/users/current');
+        if (!userResponse.success) {
+            Utils.showAlert('请先登录', 'warning');
+            window.location.href = '{{ url_for("main.projects") }}';
+            return;
+        }
+        
+        const grade = userResponse.data.grade || '初中';  // 默认初中
+        
+        // 显示加载状态
+        document.getElementById('topicLoadingArea').style.display = 'block';
+        document.getElementById('generatedTopicDisplay').style.display = 'none';
+        
+        const response = await Utils.apiRequest('/ai/generate-topic', {
+            method: 'POST',
+            body: JSON.stringify({
+                grade: grade,
+                subject: subject,
+                article_type: articleType,
+                ai_provider: parsedSettings.provider,
+                ai_model: parsedSettings.model,
+                ai_base_url: parsedSettings.base_url,
+                ai_api_key: parsedSettings.api_key
+            })
+        });
+        
+        if (response.success) {
+            generatedTopic = response.data.topic;
+            document.getElementById('generatedTopicText').textContent = generatedTopic;
+            document.getElementById('generatedTopicDisplay').style.display = 'block';
+        } else {
+            Utils.showAlert('生成题目失败：' + response.message, 'error');
+        }
+    } catch (error) {
+        Utils.showAlert('生成题目失败：' + error.message, 'error');
+    } finally {
+        document.getElementById('topicLoadingArea').style.display = 'none';
+    }
+}
+
+// 绑定生成题目按钮
+document.getElementById('generateTopicBtn').addEventListener('click', generateTopic);
+document.getElementById('regenerateBtn').addEventListener('click', generateTopic);
+
+// 表单提交
+document.getElementById('setupForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // 设置题目
+    if (data.topic_mode === 'ai_generated') {
+        if (!generatedTopic) {
+            Utils.showAlert('请先点击"生成题目"按钮生成AI题目，或切换到"自定义题目"模式', 'warning');
+            return;
+        }
+        data.custom_topic = generatedTopic;
+    } else {
+        if (!data.custom_topic.trim()) {
+            Utils.showAlert('请输入自定义题目', 'warning');
+            return;
+        }
+    }
+    
+    // 禁用提交按钮
+    const submitBtn = document.getElementById('createProjectBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 创建中...';
+    
+    try {
+        const response = await Utils.apiRequest('/projects', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        if (response.success) {
+            Utils.showAlert('项目创建成功！', 'success');
+            setTimeout(() => {
+                window.location.href = `/writing/${response.data.id}`;
+            }, 1000);
+        } else {
+            Utils.showAlert('创建失败：' + response.message, 'error');
+        }
+    } catch (error) {
+        Utils.showAlert('创建失败：' + error.message, 'error');
+    } finally {
+        // 恢复提交按钮
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// 页面加载时检查登录状态
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await Utils.apiRequest('/users/current');
+        if (!response.success) {
+            Utils.showAlert('请先登录', 'warning');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("main.projects") }}';
+            }, 2000);
+        }
+    } catch (error) {
+        Utils.showAlert('请先登录', 'warning');
+        setTimeout(() => {
+            window.location.href = '{{ url_for("main.projects") }}';
+        }, 2000);
+    }
+});
+</script>
+{% endblock %}

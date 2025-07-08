@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI智能写作辅导软件 - AI驱动的个性化写作学习平台">
+    <meta name="keywords" content="AI写作,智能写作,写作辅助,作文评分,写作学习">
+    <meta name="author" content="AI智能写作辅导软件">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="{% block og_title %}AI智能写作辅导软件{% endblock %}">
+    <meta property="og:description" content="AI驱动的个性化写作学习平台">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/images/og-image.jpg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png">
+    
+    <title>{% block title %}AI智能写作辅导软件{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 自定义样式 -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/mobile.css') }}" rel="stylesheet">
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- 全局错误提示区域 -->
+    <div id="globalAlert" class="alert alert-dismissible fade" role="alert" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 10000; margin: 0; border-radius: 0;">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <i id="alertIcon" class="fas fa-info-circle me-2"></i>
+                <span id="alertMessage"></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载进度条 -->
+    <div id="loading-bar" class="loading-bar"></div>
+    
+    <!-- 跳转到主内容的链接（无障碍） -->
+    <a href="#main-content" class="skip-link">跳转到主内容</a>
+    
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <!-- 品牌Logo -->
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+                <i class="fas fa-pen-fancy me-2"></i>
+                <span class="brand-text">智能写作</span>
+            </a>
+            
+            <!-- 移动端菜单按钮 -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- 导航菜单 -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.index') }}">
+                            <i class="fas fa-home me-1"></i>首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.projects') }}">
+                            <i class="fas fa-folder me-1"></i>我的项目
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.setup') }}">
+                            <i class="fas fa-plus me-1"></i>新建项目
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- 右侧菜单 -->
+                <ul class="navbar-nav">
+                    <!-- 用户菜单 -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" 
+                           id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="user-avatar me-2">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="d-none d-md-inline">{{ session.username or '未登录' }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end user-dropdown" aria-labelledby="userDropdown">
+                            <li>
+                                <div class="dropdown-header d-flex align-items-center">
+                                    <div class="user-avatar-large me-2">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ session.username or '未登录' }}</div>
+                                        <small class="text-muted">学生用户</small>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <!-- 快速设置区域 -->
+                            <li class="dropdown-item-text p-3">
+                                <div class="quick-settings">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-graduation-cap me-2 text-primary"></i>
+                                        <span class="fw-semibold">学习设置</span>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small mb-1">年级</label>
+                                            <select class="form-select form-select-sm" id="navGradeSelect" onchange="updateUserSettings()">
+                                                <option value="小学">小学</option>
+                                                <option value="初中">初中</option>
+                                                <option value="高中">高中</option>
+                                                <option value="大学">大学</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small mb-1">学科</label>
+                                            <select class="form-select form-select-sm" id="navSubjectSelect" onchange="updateUserSettings()">
+                                                <option value="语文">语文</option>
+                                                <option value="英语">英语</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <!-- AI设置区域 -->
+                            <li class="dropdown-item-text p-3">
+                                <div class="ai-settings">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-robot me-2 text-info"></i>
+                                        <span class="fw-semibold">AI设置</span>
+                                        <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="testAIConnection()">
+                                            <i class="fas fa-plug"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small mb-1">供应商</label>
+                                            <select class="form-select form-select-sm" id="navAIProvider" onchange="updateNavModelOptions();">
+                                                <option value="">请选择供应商</option>
+                                                <option value="OpenAI">OpenAI</option>
+                                                <option value="Anthropic">Anthropic</option>
+                                                <option value="Google">Google</option>
+                                                <option value="Groq">Groq</option>
+                                                <option value="DeepSeek">DeepSeek</option>
+                                                <option value="Ollama">Ollama (本地)</option>
+                                                <option value="LMStudio">LM Studio (本地)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small mb-1">模型</label>
+                                            <select class="form-select form-select-sm" id="navAIModel">
+                                                <option value="gemma3:latest">gemma3:latest</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2" id="navApiKeySection" style="display: none;">
+                                        <label class="form-label small mb-1">API Key</label>
+                                        <input type="password" class="form-control form-control-sm" id="navAPIKey" 
+                                               placeholder="输入API Key">
+                                    </div>
+                                    <div class="mt-2" id="navBaseUrlSection" style="display: block;">
+                                        <label class="form-label small mb-1">Base URL</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" id="navAIBaseUrl" 
+                                                   placeholder="AI服务地址">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="refreshAIModels()">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-primary btn-sm w-100" type="button" onclick="UserSettings.updateAISettings()">
+                                            <i class="fas fa-save me-1"></i>保存设置
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <!-- 菜单项 -->
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('main.projects') }}">
+                                    <i class="fas fa-folder me-2"></i>我的项目
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="showUserProfile()">
+                                    <i class="fas fa-user-edit me-2"></i>个人资料
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="showHelp()">
+                                    <i class="fas fa-question-circle me-2"></i>帮助中心
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- 主题切换按钮 -->
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link border-0" onclick="toggleTheme()" 
+                                title="切换主题" aria-label="切换深色/浅色主题">
+                            <i class="fas fa-moon" id="theme-icon"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 面包屑导航 -->
+    {% block breadcrumb %}
+    {% if request.endpoint != 'main.index' %}
+    <nav aria-label="breadcrumb" class="breadcrumb-nav">
+        <div class="container">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.index') }}">
+                        <i class="fas fa-home"></i>
+                    </a>
+                </li>
+                {% if request.endpoint == 'main.projects' %}
+                <li class="breadcrumb-item active" aria-current="page">我的项目</li>
+                {% elif request.endpoint == 'main.setup' %}
+                <li class="breadcrumb-item active" aria-current="page">创建项目</li>
+                {% elif request.endpoint == 'main.writing' %}
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.projects') }}">我的项目</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">写作</li>
+                {% elif request.endpoint == 'main.review' %}
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.projects') }}">我的项目</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">评分结果</li>
+
+                {% endif %}
+            </ol>
+        </div>
+    </nav>
+    {% endif %}
+    {% endblock %}
+    
+    <!-- 主要内容区域 -->
+    <main id="main-content" class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="footer-brand">
+                        <h5 class="footer-title">
+                            <i class="fas fa-pen-fancy me-2"></i>
+                            AI智能写作辅导软件
+                        </h5>
+                        <p class="footer-description">
+                            基于先进AI技术的个性化写作学习平台，
+                            让每一次写作都成为进步的阶梯。
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="footer-title">快速链接</h6>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('main.index') }}">首页</a></li>
+                        <li><a href="{{ url_for('main.projects') }}">我的项目</a></li>
+                        <li><a href="{{ url_for('main.setup') }}">新建项目</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="footer-title">功能特色</h6>
+                    <ul class="footer-links">
+                        <li><a href="#features">AI智能分析</a></li>
+                        <li><a href="#features">三阶段写作</a></li>
+                        <li><a href="#features">实时评分</a></li>
+                        <li><a href="#features">个性化学习</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="footer-title">帮助支持</h6>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/hengruiyun" onclick="showHelp()">使用帮助</a></li>
+                        <li><a href="https://github.com/hengruiyun" onclick="showFAQ()">常见问题</a></li>
+                        <li><a href="https://github.com/hengruiyun" onclick="showContact()">联系我们</a></li>
+                        <li><a href="#" onclick="showPrivacy()">隐私政策</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h6 class="footer-title">关注我们</h6>
+                    <div class="social-links">
+                        <a href="#" class="social-link" title="微信公众号">
+                            <i class="fab fa-weixin"></i>
+                        </a>
+                        <a href="#" class="social-link" title="新浪微博">
+                            <i class="fab fa-weibo"></i>
+                        </a>
+                        <a href="#" class="social-link" title="QQ群">
+                            <i class="fab fa-qq"></i>
+                        </a>
+                        <a href="https://github.com/hengruiyun" class="social-link" title="GitHub">
+                            <i class="fab fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="footer-divider">
+            
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="footer-copyright">
+                        © {{ current_year }} AI智能写作辅导软件. 保留所有权利.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="footer-meta">
+                        <span class="footer-version">{{ app_version }}</span>
+                        <span class="footer-separator">|</span>
+                        <span class="footer-build">构建时间: {{ build_date }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- 返回顶部按钮 -->
+    <button id="backToTop" class="back-to-top" title="返回顶部" aria-label="返回页面顶部">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+    
+    <!-- 全局提示容器 -->
+    <div id="alert-container" class="alert-container"></div>
+    
+    <!-- 全局加载遮罩 -->
+    <div id="global-loading" class="global-loading" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">处理中...</p>
+        </div>
+    </div>
+    
+    <!-- JavaScript库 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- 页面特定脚本 -->
+    {% block scripts %}{% endblock %}
+    
+    <!-- 全局脚本 -->
+    <script>
+    // 页面加载完成处理
+    document.addEventListener('DOMContentLoaded', function() {
+        // 隐藏加载进度条
+        setTimeout(() => {
+            document.getElementById('loading-bar').style.opacity = '0';
+        }, 500);
+        
+        // 初始化返回顶部按钮
+        initBackToTop();
+        
+        // 初始化主题
+        initTheme();
+        
+        // 初始化导航高亮
+        initNavHighlight();
+        
+        // 初始化用户头像
+        initUserAvatar();
+        
+        // 初始化用户设置（仅在登录状态下）
+        {% if session.user_id %}
+        initUserSettings();
+        {% endif %}
+        
+        console.log('页面初始化完成');
+    });
+    
+    // 返回顶部功能
+    function initBackToTop() {
+        const backToTopBtn = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', Utils.throttle(() => {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        }, 100));
+        
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    }
+    
+    // 主题切换
+    function toggleTheme() {
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        // 更新图标
+        const icon = document.getElementById('theme-icon');
+        icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        
+        Utils.showAlert(`已切换到${newTheme === 'dark' ? '深色' : '浅色'}主题`, 'info', 2000);
+    }
+    
+    // 初始化主题
+    function initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        const icon = document.getElementById('theme-icon');
+        icon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    
+    // 导航高亮
+    function initNavHighlight() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+        
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+        });
+    }
+    
+    // 用户头像初始化
+    function initUserAvatar() {
+        const avatar = document.querySelector('.user-avatar');
+        if (avatar) {
+            const username = '{{ session.username or "" }}';
+            if (username) {
+                // 使用用户名首字母作为头像
+                const initial = username.charAt(0).toUpperCase();
+                avatar.innerHTML = initial;
+                avatar.style.background = `linear-gradient(135deg, 
+                    hsl(${username.charCodeAt(0) * 5}, 70%, 60%), 
+                    hsl(${username.charCodeAt(0) * 7}, 70%, 70%))`;
+            }
+        }
+    }
+    
+    // 初始化用户设置
+    async function initUserSettings() {
+        try {
+            const response = await fetch('/api/users/current');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    const user = data.data;
+                    // 设置导航栏中的年级和学科选择器
+                    const gradeSelect = document.getElementById('navGradeSelect');
+                    const subjectSelect = document.getElementById('navSubjectSelect');
+                    
+                    if (gradeSelect && user.grade) {
+                        gradeSelect.value = user.grade;
+                    }
+                    if (subjectSelect && user.subject) {
+                        subjectSelect.value = user.subject;
+                    }
+                    
+                    // 绑定变更事件
+                    if (gradeSelect) {
+                        gradeSelect.addEventListener('change', updateUserSettings);
+                    }
+                    if (subjectSelect) {
+                        subjectSelect.addEventListener('change', updateUserSettings);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('获取用户信息失败:', error);
+        }
+    }
+    
+    // 更新用户设置
+    async function updateUserSettings() {
+        const gradeSelect = document.getElementById('navGradeSelect');
+        const subjectSelect = document.getElementById('navSubjectSelect');
+        
+        if (!gradeSelect || !subjectSelect) return;
+        
+        try {
+            const response = await Utils.apiRequest('/users/settings', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    grade: gradeSelect.value,
+                    subject: subjectSelect.value
+                })
+            });
+            
+            if (response.success) {
+                Utils.showAlert('设置已更新', 'success', 2000);
+            } else {
+                Utils.showAlert('更新失败: ' + (response.message || '未知错误'), 'error');
+            }
+        } catch (error) {
+            console.error('更新用户设置错误:', error);
+            Utils.showAlert('更新失败: ' + error.message, 'error');
+        }
+    }
+    
+    // 用户设置
+    function showUserSettings() {
+        Utils.showModal({
+            title: '用户设置',
+            content: `
+                <div class="user-settings">
+                    <div class="setting-item">
+                        <label class="form-label">显示名称</label>
+                        <input type="text" class="form-control" value="{{ session.username or '' }}" readonly>
+                    </div>
+                    <div class="setting-item">
+                        <label class="form-label">自动保存间隔</label>
+                        <select class="form-select">
+                            <option value="30">30秒</option>
+                            <option value="60" selected>1分钟</option>
+                            <option value="120">2分钟</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableNotifications" checked>
+                            <label class="form-check-label" for="enableNotifications">
+                                启用通知提醒
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `,
+            footer: `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveUserSettings()">保存</button>
+            `
+        });
+    }
+    
+    // 保存用户设置
+    function saveUserSettings() {
+        Utils.showAlert('设置已保存', 'success', 2000);
+        // 这里可以添加实际的保存逻辑
+    }
+    
+    // 帮助信息
+    function showHelp() {
+        Utils.showModal({
+            title: '使用帮助',
+            size: 'lg',
+            content: `
+                <div class="help-content">
+                    <h6>快速开始</h6>
+                    <ol>
+                        <li>注册并登录账号</li>
+                        <li>创建新的写作项目</li>
+                        <li>按照三个阶段完成写作：构思 → 提纲 → 正文</li>
+                        <li>获取AI评分和建议</li>
+                    </ol>
+                    
+                    <h6>键盘快捷键</h6>
+                    <div class="keyboard-shortcuts">
+                        <div class="shortcut-item">
+                            <kbd>Ctrl + S</kbd>
+                            <span>保存当前内容</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl + /</kbd>
+                            <span>显示快捷键帮助</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Esc</kbd>
+                            <span>关闭模态框</span>
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+    }
+    
+    // 常见问题
+    function showFAQ() {
+        Utils.showModal({
+            title: '常见问题',
+            size: 'lg',
+            content: `
+                <div class="faq-content">
+                    <div class="faq-item">
+                        <h6>Q: 如何创建新的写作项目？</h6>
+                        <p>A: 点击导航栏的"新建项目"按钮，填写项目信息即可。</p>
+                    </div>
+                    <div class="faq-item">
+                        <h6>Q: AI评分是如何工作的？</h6>
+                        <p>A: 系统会从内容质量、结构组织、语言表达、创新亮点四个维度进行评分。</p>
+                    </div>
+                    <div class="faq-item">
+                        <h6>Q: 我的作文内容会被保存多久？</h6>
+                        <p>A: 您的作文内容会永久保存，直到您主动删除。</p>
+                    </div>
+                </div>
+            `
+        });
+    }
+    
+    // 联系我们
+    function showContact() {
+        Utils.showModal({
+            title: '联系我们',
+            content: `
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope me-2"></i>
+                        <span>邮箱：support@writing-ai.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone me-2"></i>
+                        <span>电话：400-123-4567</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fab fa-qq me-2"></i>
+                        <span>QQ群：123456789</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fab fa-weixin me-2"></i>
+                        <span>微信：writing_ai_helper</span>
+                    </div>
+                </div>
+            `
+        });
+    }
+    
+    // 隐私政策
+    function showPrivacy() {
+        Utils.showModal({
+            title: '隐私政策',
+            size: 'lg',
+            content: `
+                <div class="privacy-content">
+                    <h6>信息收集</h6>
+                    <p>我们只收集为您提供服务所必需的信息，包括用户名、年级、写作内容等。</p>
+                    
+                    <h6>信息使用</h6>
+                    <p>您的信息仅用于提供写作辅助服务，不会用于其他商业目的。</p>
+                    
+                    <h6>信息保护</h6>
+                    <p>我们采用业界标准的安全措施保护您的个人信息安全。</p>
+                    
+                    <h6>信息共享</h6>
+                    <p>我们不会向第三方分享您的个人信息，除非获得您的明确同意。</p>
+                </div>
+            `
+        });
+    }
+    
+    // 退出登录功能已删除
+    
+    // 显示用户资料
+    function showUserProfile() {
+        Utils.showModal({
+            title: '个人资料',
+            content: `
+                <div class="user-profile">
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-control" value="{{ session.username or '' }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">年级</label>
+                        <select class="form-select" id="profileGrade">
+                            <option value="小学">小学</option>
+                            <option value="初中">初中</option>
+                            <option value="高中">高中</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">学科</label>
+                        <select class="form-select" id="profileSubject">
+                            <option value="语文">语文</option>
+                            <option value="英语">英语</option>
+                        </select>
+                    </div>
+                </div>
+            `,
+            footer: `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveUserProfile()">保存</button>
+            `
+        });
+        
+        // 加载当前用户信息
+        loadUserProfileData();
+    }
+    
+    // 加载用户资料数据
+    async function loadUserProfileData() {
+        try {
+            const response = await Utils.apiRequest('/users/current');
+            if (response.success && response.data) {
+                const gradeSelect = document.getElementById('profileGrade');
+                const subjectSelect = document.getElementById('profileSubject');
+                
+                if (gradeSelect) gradeSelect.value = response.data.grade || '初中';
+                if (subjectSelect) subjectSelect.value = response.data.subject || '语文';
+            }
+        } catch (error) {
+            console.error('加载用户资料失败:', error);
+        }
+    }
+    
+    // 保存用户资料
+    async function saveUserProfile() {
+        const gradeSelect = document.getElementById('profileGrade');
+        const subjectSelect = document.getElementById('profileSubject');
+        
+        if (!gradeSelect || !subjectSelect) return;
+        
+        try {
+            const response = await Utils.apiRequest('/users/settings', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    grade: gradeSelect.value,
+                    subject: subjectSelect.value
+                })
+            });
+            
+            if (response.success) {
+                Utils.showAlert('资料更新成功', 'success', 2000);
+                // 关闭模态框
+                const modal = bootstrap.Modal.getInstance(document.querySelector('.modal'));
+                if (modal) modal.hide();
+                // 刷新页面以更新导航栏显示
+                location.reload();
+            } else {
+                Utils.showAlert('更新失败: ' + response.message, 'error');
+            }
+        } catch (error) {
+            console.error('保存用户资料错误:', error);
+            Utils.showAlert('更新失败: ' + error.message, 'error');
+        }
+    }
+    </script>
+</body>
+</html>

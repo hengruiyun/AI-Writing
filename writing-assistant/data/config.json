@@ -1,0 +1,22 @@
+{
+  "ai_model": {
+    "value": "gpt-3.5-turbo",
+    "description": "默认配置: ai_model",
+    "updated_at": "2025-07-07T23:12:26.093248"
+  },
+  "max_word_count": {
+    "value": 800,
+    "description": "默认配置: max_word_count",
+    "updated_at": "2025-07-07T23:12:26.102266"
+  },
+  "enable_ai_suggestions": {
+    "value": true,
+    "description": "默认配置: enable_ai_suggestions",
+    "updated_at": "2025-07-07T23:12:26.109700"
+  },
+  "auto_save_interval": {
+    "value": 30,
+    "description": "默认配置: auto_save_interval",
+    "updated_at": "2025-07-07T23:12:26.118500"
+  }
+}

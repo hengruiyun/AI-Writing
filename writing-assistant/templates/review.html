@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}评分结果 - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="review-container">
+    <!-- 项目信息 -->
+    <div class="project-info">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3>{{ project.title }}</h3>
+                <p class="text-muted mb-0">{{ project.subject }} · {{ project.article_type }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('main.writing', project_id=project.id) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit"></i> 继续编辑
+                </a>
+                <a href="{{ url_for('main.projects') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+        
+        <!-- 题目 -->
+        <div class="topic-display">
+            <h6 class="text-muted">写作题目</h6>
+            <p class="topic-text">{{ project.topic }}</p>
+        </div>
+    </div>
+    
+    <!-- 评分结果 -->
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="score-card">
+                <div class="overall-score">
+                    <div class="score-circle">
+                        <span class="score-number">{{ project.final_score or 0 }}</span>
+                        <span class="score-label">总分</span>
+                    </div>
+                </div>
+                
+                {% if project.scores %}
+                <div class="dimension-scores">
+                    <h6>各维度得分</h6>
+                    {% set scores = project.scores | from_json %}
+                    <div class="score-item">
+                        <span class="score-name">内容质量</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: {{ (scores.content or 0) * 4 }}%"></div>
+                            <span class="score-value">{{ scores.content or 0 }}/25</span>
+                        </div>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-name">结构组织</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: {{ (scores.structure or 0) * 4 }}%"></div>
+                            <span class="score-value">{{ scores.structure or 0 }}/25</span>
+                        </div>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-name">语言表达</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: {{ (scores.language or 0) * 4 }}%"></div>
+                            <span class="score-value">{{ scores.language or 0 }}/25</span>
+                        </div>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-name">创新亮点</span>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: {{ (scores.innovation or 0) * 4 }}%"></div>
+                            <span class="score-value">{{ scores.innovation or 0 }}/25</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="writing-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">字数统计</span>
+                        <span class="stat-value">{{ project.word_count }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">完成时间</span>
+                        <span class="stat-value">{{ project.completed_at[:19] if project.completed_at else '未完成' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-8">
+            <!-- AI评价 -->
+            <div class="ai-evaluation">
+                <h5><i class="fas fa-robot"></i> AI评价与建议</h5>
+                
+                {% if project.ai_feedback %}
+                {% set feedback = project.ai_feedback | from_json %}
+                {% if feedback.analysis %}
+                <div class="evaluation-section">
+                    <h6>综合评价</h6>
+                    <div class="evaluation-content">
+                        {% if feedback.analysis.comment %}
+                            <p>{{ feedback.analysis.comment }}</p>
+                        {% elif feedback.analysis.evaluation %}
+                            <p>{{ feedback.analysis.evaluation }}</p>
+                        {% else %}
+                            <p>{{ feedback.analysis }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if feedback.analysis.strengths %}
+                <div class="evaluation-section">
+                    <h6 class="text-success"><i class="fas fa-thumbs-up"></i> 优点与亮点</h6>
+                    <ul class="evaluation-list">
+                        {% for strength in feedback.analysis.strengths %}
+                        <li class="list-item-success">{{ strength }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if feedback.analysis.improvements %}
+                <div class="evaluation-section">
+                    <h6 class="text-warning"><i class="fas fa-exclamation-triangle"></i> 改进建议</h6>
+                    <ul class="evaluation-list">
+                        {% for improvement in feedback.analysis.improvements %}
+                        <li class="list-item-warning">{{ improvement }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">暂无AI评价</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- 写作内容预览 -->
+            <div class="content-preview">
+                <h5><i class="fas fa-file-alt"></i> 写作内容</h5>
+                
+                <div class="content-tabs">
+                    <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="writing-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#writing-content" type="button" role="tab">
+                                正文
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="outline-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#outline-content" type="button" role="tab">
+                                提纲
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="brainstorm-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#brainstorm-content" type="button" role="tab">
+                                构思
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="contentTabsContent">
+                        <div class="tab-pane fade show active" id="writing-content" role="tabpanel">
+                            <div class="content-text">
+                                {% if project.writing_content %}
+                                    {{ project.writing_content | nl2br }}
+                                {% else %}
+                                    <p class="text-muted">暂无正文内容</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="outline-content" role="tabpanel">
+                            <div class="content-text">
+                                {% if project.outline_content %}
+                                    {{ project.outline_content | nl2br }}
+                                {% else %}
+                                    <p class="text-muted">暂无提纲内容</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="brainstorm-content" role="tabpanel">
+                            <div class="content-text">
+                                {% if project.brainstorm_content %}
+                                    {{ project.brainstorm_content | nl2br }}
+                                {% else %}
+                                    <p class="text-muted">暂无构思内容</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.review-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.project-info {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.topic-display {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+    border-left: 4px solid #007bff;
+}
+
+.topic-text {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+    color: #333;
+}
+
+.score-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.overall-score {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin: 0 auto;
+}
+
+.score-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.dimension-scores {
+    margin-bottom: 30px;
+}
+
+.score-item {
+    margin-bottom: 15px;
+}
+
+.score-name {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.score-bar {
+    position: relative;
+    height: 25px;
+    background: #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.score-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 12px;
+    transition: width 0.8s ease;
+}
+
+.score-value {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.writing-stats {
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    color: #6c757d;
+}
+
+.stat-value {
+    font-weight: 500;
+}
+
+.ai-evaluation {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.evaluation-section {
+    margin-bottom: 25px;
+}
+
+.evaluation-content {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #007bff;
+}
+
+.evaluation-list {
+    list-style: none;
+    padding: 0;
+}
+
+.evaluation-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.evaluation-list li:last-child {
+    border-bottom: none;
+}
+
+.list-item-success {
+    color: #28a745;
+}
+
+.list-item-success:before {
+    content: "✓ ";
+    font-weight: bold;
+}
+
+.list-item-warning {
+    color: #ffc107;
+}
+
+.list-item-warning:before {
+    content: "⚠ ";
+    font-weight: bold;
+}
+
+.content-preview {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.content-tabs {
+    margin-top: 20px;
+}
+
+.content-text {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+    min-height: 200px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+    .score-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .score-number {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 添加自定义过滤器支持
+document.addEventListener('DOMContentLoaded', function() {
+    // 动画效果
+    const scoreItems = document.querySelectorAll('.score-item');
+    scoreItems.forEach((item, index) => {
+        setTimeout(() => {
+            const fill = item.querySelector('.score-fill');
+            if (fill) {
+                fill.style.width = fill.style.width || '0%';
+            }
+        }, index * 200);
+    });
+});
+</script>
+{% endblock %} 
