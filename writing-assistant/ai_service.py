@@ -29,10 +29,10 @@ class AIService:
         self.timeout = config.LLM_TIMEOUT
         # 默认AI设置
         self.default_settings = {
-            'provider': '',
-            'model': '',
+            'provider': 'Ollama',
+            'model': 'qwen3:0.6b',
             'api_key': '',
-            'base_url': ''
+            'base_url': 'http://localhost:11434'
         }
         
     
@@ -131,9 +131,28 @@ Requirements:
                 grade=grade,
                 subject=subject,
                 requirement=requirement,
-                temperature=0.8  # 提高创造性
+                temperature=0.8,  # 提高创造性
+                disable_think=True  # 禁用think模式
             )
-            return result.strip()
+            
+            # 处理生成的题目，如果有多个选项（如"1 2"），只取第一个
+            result = result.strip()
+            if result:
+                # 检查是否有数字开头的多个选项
+                lines = result.split('\n')
+                first_line = lines[0].strip()
+                
+                # 如果第一行包含数字序号，提取第一个选项
+                import re
+                # 匹配"1. xxx 2. yyy"或"1 xxx 2 yyy"格式
+                match = re.match(r'^\s*1[.、\s]?([^\d]+?)(?:\s*[2-9]|$)', first_line)
+                if match:
+                    result = match.group(1).strip()
+                else:
+                    # 如果没有匹配到数字格式，使用第一行
+                    result = first_line
+            
+            return result
         except Exception as e:
             raise Exception(f"生成题目失败: {str(e)}")
     
@@ -361,7 +380,8 @@ Consider how well the student demonstrates understanding of the topic and expres
                 topic=ctx_info['topic'],
                 requirement=f"生成{suggestion_type}建议-{content_hash}",
                 json_mode=True,
-                temperature=0.8  # 增加随机性
+                temperature=0.8,  # 增加随机性
+                disable_think=True  # 禁用think模式
             )
             
             try:
@@ -519,18 +539,67 @@ Please provide:
                 topic=ctx_info['topic'],
                 requirement=f"{stage_info['title']}指导-{content_hash}",
                 json_mode=True,
-                temperature=0.8  # 增加随机性
+                temperature=0.8,  # 增加随机性
+                disable_think=True  # 禁用think模式
             )
             
             try:
                 logger.debug(f"[AI响应] 原始AI响应: {result[:200]}...")
                 
-                # 清理AI响应中的markdown代码块标记
+                # 清理AI响应中的markdown代码块标记和think标签
                 cleaned_result = result.strip()
+                
+                # 移除<think>标签及其内容
+                import re
+                think_pattern = r'<think>.*?</think>'
+                cleaned_result = re.sub(think_pattern, '', cleaned_result, flags=re.DOTALL)
+                
+                # 移除markdown代码块标记
                 if cleaned_result.startswith('```json'):
                     cleaned_result = cleaned_result[7:]  # 移除开头的```json
                 if cleaned_result.endswith('```'):
                     cleaned_result = cleaned_result[:-3]  # 移除结尾的```
+                
+                # 查找JSON内容，尝试修复不完整的JSON
+                json_match = re.search(r'\{.*\}', cleaned_result, re.DOTALL)
+                if json_match:
+                    cleaned_result = json_match.group(0)
+                else:
+                    # 如果没有找到完整的JSON，尝试查找开始的{
+                    start_match = re.search(r'\{', cleaned_result)
+                    if start_match:
+                        # 从{开始截取到字符串末尾
+                        cleaned_result = cleaned_result[start_match.start():]
+                        # 尝试补全JSON结构
+                        if not cleaned_result.rstrip().endswith('}'):
+                            # 计算需要补全的}数量
+                            open_braces = cleaned_result.count('{')
+                            close_braces = cleaned_result.count('}')
+                            missing_braces = open_braces - close_braces
+                            if missing_braces > 0:
+                                 # 检查是否有未闭合的数组或字符串
+                                 lines = cleaned_result.split('\n')
+                                 last_line = lines[-1].strip() if lines else ''
+                                 
+                                 # 如果最后一行不是以}、]、"结尾，可能需要补全
+                                 if last_line and not last_line.endswith(('}', ']', '"', ',')):
+                                     # 检查是否在字符串中
+                                     quote_count = cleaned_result.count('"') - cleaned_result.count('\\"')
+                                     if quote_count % 2 == 1:  # 奇数个引号，说明有未闭合的字符串
+                                         cleaned_result += '"'
+                                         logger.debug("[JSON修复] 补全了未闭合的字符串")
+                                     
+                                     # 检查是否有未闭合的数组
+                                     open_brackets = cleaned_result.count('[')
+                                     close_brackets = cleaned_result.count(']')
+                                     missing_brackets = open_brackets - close_brackets
+                                     if missing_brackets > 0:
+                                         cleaned_result += ']' * missing_brackets
+                                         logger.debug(f"[JSON修复] 补全了{missing_brackets}个右方括号")
+                                 
+                                 cleaned_result += '}' * missing_braces
+                                 logger.debug(f"[JSON修复] 补全了{missing_braces}个右括号")
+                
                 cleaned_result = cleaned_result.strip()
                 
                 logger.debug(f"[AI响应] 清理后的响应: {cleaned_result[:200]}...")
@@ -643,12 +712,17 @@ Please provide:
                 return data
                 
             except json.JSONDecodeError as e:
-                # 如果JSON解析失败，返回阶段默认建议
+                # JSON解析失败时，尝试从损坏的JSON中提取可用信息
                 logger.error(f"[JSON解析失败] 错误: {str(e)}")
                 logger.error(f"[JSON解析失败] 原始响应: {result}")
+                
+                # 尝试从损坏的JSON中提取部分可用信息
+                partial_data = self._extract_partial_json_data(cleaned_result)
+                logger.debug(f"[部分解析] 提取到的数据: {partial_data}")
+                
+                # 准备默认值
                 default_examples = self._get_default_examples(stage, ctx_info['topic'], ctx_info['subject'])
-                logger.debug(f"[JSON解析失败] 使用默认example_sentences: {default_examples}")
-                return {
+                default_suggestions = {
                     "stage_tips": stage_info['tips'],
                     "content_suggestions": [
                         "围绕题目核心展开内容",
@@ -676,6 +750,15 @@ Please provide:
                     "example_sentences": default_examples,
                     "raw_response": result
                 }
+                
+                # 使用部分解析的数据覆盖默认值
+                for key, value in partial_data.items():
+                    if value:  # 只有当提取到的值不为空时才使用
+                        default_suggestions[key] = value
+                        logger.debug(f"[部分解析] 使用提取的{key}: {value}")
+                
+                logger.debug(f"[JSON解析失败] 最终返回数据包含字段: {list(default_suggestions.keys())}")
+                return default_suggestions
         except Exception as e:
             # 返回基础建议
             logger.error(f"[异常处理] 发生异常: {str(e)}")
@@ -697,48 +780,111 @@ Please provide:
                 "error": str(e)
             }
     
+    def _extract_partial_json_data(self, damaged_json: str) -> Dict[str, Any]:
+        """从损坏的JSON中提取部分可用信息"""
+        import re
+        
+        extracted_data = {}
+        
+        try:
+            # 尝试提取各个字段的内容
+            fields_to_extract = [
+                'current_status_critique',
+                'stage_tips', 
+                'content_suggestions',
+                'writing_tips',
+                'references',
+                'next_steps',
+                'continuation_sets',
+                'example_sentences'
+            ]
+            
+            for field in fields_to_extract:
+                # 尝试提取字符串字段
+                if field == 'current_status_critique':
+                    pattern = rf'"current_status_critique"\s*:\s*"([^"]*(?:\\.[^"]*)*?)"'
+                    match = re.search(pattern, damaged_json, re.DOTALL)
+                    if match:
+                        extracted_data[field] = match.group(1).replace('\\"', '"').replace('\\n', '\n')
+                        logger.debug(f"[部分提取] 成功提取{field}: {extracted_data[field][:100]}...")
+                
+                # 尝试提取数组字段
+                elif field in ['stage_tips', 'content_suggestions', 'writing_tips', 'references', 'next_steps', 'example_sentences']:
+                    # 匹配数组内容
+                    pattern = rf'"({field})"\s*:\s*\[([^\]]*(?:\[[^\]]*\][^\]]*)*?)\]'
+                    match = re.search(pattern, damaged_json, re.DOTALL)
+                    if match:
+                        array_content = match.group(2)
+                        # 提取数组中的字符串元素
+                        string_pattern = r'"([^"]*(?:\\.[^"]*)*?)"|"([^"]*(?:\\.[^"]*)*?)"'
+                        strings = re.findall(string_pattern, array_content)
+                        extracted_strings = []
+                        for string_match in strings:
+                            # string_match是一个元组，取非空的部分
+                            string_value = string_match[0] if string_match[0] else string_match[1]
+                            if string_value.strip():
+                                cleaned_string = string_value.replace('\\"', '"').replace('\\n', '\n')
+                                extracted_strings.append(cleaned_string)
+                        
+                        if extracted_strings:
+                            extracted_data[field] = extracted_strings
+                            logger.debug(f"[部分提取] 成功提取{field}: {len(extracted_strings)}个元素")
+                
+                # 尝试提取continuation_sets（复杂对象数组）
+                elif field == 'continuation_sets':
+                    # 尝试提取continuation_sets的内容
+                    pattern = rf'"continuation_sets"\s*:\s*\[([^\]]*(?:\[[^\]]*\][^\]]*)*?)\]'
+                    match = re.search(pattern, damaged_json, re.DOTALL)
+                    if match:
+                        array_content = match.group(1)
+                        # 尝试提取对象中的sentences数组
+                        sentences_pattern = r'"sentences"\s*:\s*\[([^\]]*?)\]'
+                        sentences_matches = re.findall(sentences_pattern, array_content)
+                        
+                        continuation_sets = []
+                        for sentences_content in sentences_matches:
+                            # 提取句子
+                            sentence_pattern = r'"([^"]*(?:\\.[^"]*)*?)"|"([^"]*(?:\\.[^"]*)*?)"'
+                            sentences = re.findall(sentence_pattern, sentences_content)
+                            sentence_list = []
+                            for sentence_match in sentences:
+                                sentence_value = sentence_match[0] if sentence_match[0] else sentence_match[1]
+                                if sentence_value.strip():
+                                    cleaned_sentence = sentence_value.replace('\\"', '"').replace('\\n', '\n')
+                                    sentence_list.append(cleaned_sentence)
+                            
+                            if sentence_list:
+                                continuation_sets.append({"sentences": sentence_list})
+                        
+                        if continuation_sets:
+                            extracted_data[field] = continuation_sets
+                            logger.debug(f"[部分提取] 成功提取{field}: {len(continuation_sets)}个续写方案")
+            
+            logger.debug(f"[部分提取] 总共提取到{len(extracted_data)}个字段")
+            return extracted_data
+            
+        except Exception as e:
+            logger.error(f"[部分提取] 提取过程中出错: {str(e)}")
+            return {}
+    
     def _get_default_examples(self, stage: str, topic: str, subject: str = '语文') -> List[str]:
         """获取默认示范语句"""
         if subject == '英语':
             # 英语学科的全英文示范语句，根据阶段写相应的文章句子
             if stage == "brainstorm":
-                return [
-                    "I want to explore this from multiple angles to develop a comprehensive understanding.",
-                    "My personal experience with this has shaped my perspective in meaningful ways.",
-                    "There are several key aspects that deserve careful consideration and analysis."
-                ]
+                return []
             elif stage == "outline":
-                return [
-                    "I. Introduction: Hook the reader with a compelling opening and clear thesis statement",
-                    "II. Body: Present evidence and analysis with smooth transitions between ideas",
-                    "III. Conclusion: Synthesize main points and leave the reader with lasting thoughts"
-                ]
+                return []
             else:  # writing
-                return [
-                    "As I reflect on this experience, I realize how profoundly it has influenced my worldview.",
-                    "The complexity of this issue becomes apparent when we examine it from different perspectives.",
-                    "This moment taught me something valuable about myself and the world around me."
-                ]
+                return []
         else:
             # 语文学科的中文示范语句，根据阶段写相应的文章句子
             if stage == "brainstorm":
-                return [
-                    "我想从多个角度来深入思考这个问题，寻找不同的切入点。",
-                    "这个话题让我联想到生活中的许多真实经历和感受。",
-                    "我需要仔细分析其中蕴含的深层含义和价值。"
-                ]
+                return []
             elif stage == "outline":
-                return [
-                    "一、开头：用生动的场景或深刻的感悟引入主题",
-                    "二、主体：通过具体事例和细致描写展开论述",
-                    "三、结尾：升华主题，表达个人感悟和思考"
-                ]
+                return []
             else:  # writing
-                return [
-                    "那一刻，我深深地感受到了内心的震撼和思考的力量。",
-                    "生活中的点点滴滴都在诉说着一个深刻的道理。",
-                    "这次经历让我对人生有了更加深刻的理解和感悟。"
-                ]
+                return []
     
     def test_connection(self, user_settings: Dict) -> bool:
         """测试AI连接"""
